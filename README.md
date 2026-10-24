@@ -34,8 +34,12 @@ The ESP32 only sends weight. The server detects drinks and refills, decides the 
 ```bash
 cd server
 pip3 install -r requirements.txt
+cp .env.example .env     # PowerShell: Copy-Item .env.example .env
+# Set ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID, and NEST_NAME in .env
 python3 app.py            # prints the IP to put in the firmware
 ```
+
+Speech uses ElevenLabs and local Google Cast. See [`server/README.md`](server/README.md) for Nest setup, network troubleshooting, and a speech test.
 
 Open `http://<server-ip>:5000/` on a phone for a test page. No scale yet? `python3 simulate.py 500 450` fakes a sip.
 
