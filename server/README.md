@@ -4,7 +4,11 @@ Flask server implementing [`docs/API.md`](../docs/API.md).
 
 | File | What it does |
 | --- | --- |
-| `app.py` | Routes, validation, reminder loop |
+| `app.py` | v1 routes, validation, reminder loop; `python3 app.py` starts everything |
+| `api.py` | v2 (FastAPI): accounts, history, leaderboard, offline sync, WebSocket; mounts `app.py` |
+| `accounts.py` | Per-user status, streaks, leaderboard and sync logic |
+| `db.py`, `models.py`, `security.py` | Database (Postgres or SQLite), tables, passwords and tokens |
+| `seed_demo.py` | Fills the leaderboard with demo users |
 | `tracker.py` | Drink detection, status, lock logic (pure Python, easy to test) |
 | `speaker.py` | Plays speech on the JBL speaker (ElevenLabs + local playback) |
 | `templates/index.html` | Simple settings and progress page |
@@ -56,12 +60,16 @@ work there (no speaker), so reminders are only logged.
 2. **Settings → Root Directory:** `server`. `railway.json` sets the start command.
 3. **Settings → Networking → Generate Domain.**
 4. Leave `PORT` unset; Railway provides it. ElevenLabs variables are not needed.
-5. Check `https://<domain>/`, then set the firmware `SERVER_URL` to
+5. **Add the PostgreSQL plugin** and set `DATABASE_URL=${{Postgres.DATABASE_URL}}` on the
+   service. Without it, accounts live in a SQLite file that every redeploy wipes.
+6. Set `JWT_SECRET` (`python3 -c "import secrets; print(secrets.token_urlsafe(48))"`) and,
+   optionally, `DEFAULT_TIMEZONE` (default `America/New_York`).
+7. Check `https://<domain>/health`, then set the firmware `SERVER_URL` to
    `https://<domain>/weight` and point the app at `https://<domain>`.
 
-State is in memory, so every redeploy or restart resets today's total and the
-settings. There is no auth: anyone with the URL can post weights or change
-settings, so keep the URL private.
+Accounts, intake history and streaks (v2) are stored in the database. The scale's live
+detection state (v1) is still in memory, so a restart resets the in-progress reading
+window. The v1 routes have no auth: anyone with the URL can post weights, so keep it private.
 
 ## Test
 

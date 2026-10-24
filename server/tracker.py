@@ -33,6 +33,29 @@ DEFAULT_SETTINGS = {
 }
 
 
+def expected_ml(goal_ml, start_hour, end_hour, hour_float):
+    """Linear pace: 0 at start_hour, the whole goal at end_hour."""
+    fraction = (hour_float - start_hour) / (end_hour - start_hour)
+    return round(goal_ml * min(1.0, max(0.0, fraction)))
+
+
+def compute_status(total_ml, goal_ml, start_hour, end_hour, hour_float):
+    """The status table in docs/API.md. Shared by the scale tracker and per-user accounts."""
+    if total_ml >= goal_ml:
+        return "ahead"
+    expected = expected_ml(goal_ml, start_hour, end_hour, hour_float)
+    if not start_hour <= hour_float < end_hour or expected < MIN_EXPECTED_ML:
+        return "ok"
+    ratio = total_ml / expected
+    if ratio >= AHEAD_RATIO:
+        return "ahead"
+    if ratio >= OK_RATIO:
+        return "ok"
+    if ratio >= BEHIND_RATIO:
+        return "behind"
+    return "critical"
+
+
 class ValidationError(ValueError):
     def __init__(self, code, message):
         super().__init__(message)
@@ -87,7 +110,10 @@ class Tracker:
         self.bottle_present = False
         self.recent = []
         self.last_reminder_at = None
+        self.last_reading_at = None
         self._refill_prompted = False
+        # Called with each drink, refill, or baseline event (outside the lock).
+        self.listeners = []
         self._reset_day(clock())
 
     # ---- internals ----
@@ -116,12 +142,6 @@ class Tracker:
     def _in_active_hours(self, now):
         return self.settings["start_hour"] <= self._hour_float(now) < self.settings["end_hour"]
 
-    def _expected_ml(self, now):
-        start, end = self.settings["start_hour"], self.settings["end_hour"]
-        fraction = (self._hour_float(now) - start) / (end - start)
-        fraction = min(1.0, max(0.0, fraction))
-        return round(self.settings["goal_ml"] * fraction)
-
     def _water_ml(self):
         if self.empty_g is None or self.stable_g is None:
             return None
@@ -132,40 +152,40 @@ class Tracker:
         return water is not None and water < REFILL_ALERT_ML
 
     def _computed_status(self, now):
-        goal = self.settings["goal_ml"]
-        if self.total_ml >= goal:
-            return "ahead"
-        expected = self._expected_ml(now)
-        if not self._in_active_hours(now) or expected < MIN_EXPECTED_ML:
-            return "ok"
-        ratio = self.total_ml / expected
-        if ratio >= AHEAD_RATIO:
-            return "ahead"
-        if ratio >= OK_RATIO:
-            return "ok"
-        if ratio >= BEHIND_RATIO:
-            return "behind"
-        return "critical"
+        return compute_status(self.total_ml, self.settings["goal_ml"], self.settings["start_hour"],
+                              self.settings["end_hour"], self._hour_float(now))
 
     # ---- weight input ----
     def process(self, grams):
         """Feed one calibrated reading. Returns the event dict if a drink or refill was detected."""
+        event, baseline = self._process(grams)
+        for emitted in filter(None, (baseline, event)):
+            for listener in list(self.listeners):
+                listener(emitted)
+        return event
+
+    def _process(self, grams):
         with self._lock:
             now = self._clock()
+            self.last_reading_at = now
             if now.date() != self.day:
                 self._reset_day(now)
             self.recent.append(float(grams))
             del self.recent[:-WINDOW]
             if len(self.recent) < WINDOW or max(self.recent) - min(self.recent) > MOVE_TOLERANCE_G:
-                return None  # moving: not stable yet
+                return None, None  # moving: not stable yet
             stable = sum(self.recent) / len(self.recent)
             if stable < MIN_BOTTLE_G:
                 self.bottle_present = False  # lifted off: keep the last stable weight
-                return None
+                return None, None
             self.bottle_present = True
-            event = None
+            event = baseline = None
             prev = self.stable_g
-            if prev is not None:
+            if prev is None:
+                water = None if self.empty_g is None else max(0.0, stable - self.empty_g)
+                baseline = {"type": "baseline", "grams": round(stable, 1),
+                            "water_ml": None if water is None else round(water), "at": self._iso(now)}
+            else:
                 diff = prev - stable
                 if diff >= MIN_DRINK_G:
                     self.total_ml += diff
@@ -188,7 +208,7 @@ class Tracker:
                                        "at": self._iso(now)}
                     event = self.last_event
             self.stable_g = stable
-            return event
+            return event, baseline
 
     # ---- API views ----
     def status(self):
@@ -210,6 +230,23 @@ class Tracker:
                 "should_lock": self._lock_apps,
                 "last_drink_at": self._iso(self.last_drink_at) if self.last_drink_at else None,
                 "last_event": self.last_event,
+                "water_ml": None if self._water_ml() is None else round(self._water_ml()),
+                "empty_g": None if self.empty_g is None else round(self.empty_g, 1),
+                "needs_refill": self._needs_refill(),
+            }
+
+    def live(self):
+        """Latest scale reading for onboarding: is the Balance online, and is the weight settled?"""
+        with self._lock:
+            now = self._clock()
+            connected = self.last_reading_at is not None and (now - self.last_reading_at).total_seconds() < 10
+            grams = self.recent[-1] if self.recent else None
+            stable = (len(self.recent) == WINDOW and max(self.recent) - min(self.recent) <= MOVE_TOLERANCE_G)
+            return {
+                "connected": connected,
+                "grams": None if grams is None else round(grams, 1),
+                "stable": connected and stable and self.bottle_present,
+                "stable_g": None if self.stable_g is None else round(self.stable_g, 1),
                 "water_ml": None if self._water_ml() is None else round(self._water_ml()),
                 "empty_g": None if self.empty_g is None else round(self.empty_g, 1),
                 "needs_refill": self._needs_refill(),
