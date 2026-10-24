@@ -48,16 +48,16 @@ class ApiTests(unittest.TestCase):
         self.client.post("/api/demo/override", json={"status": None})
         self.assertEqual(self.client.post("/api/reset").get_json(), {"ok": True})
 
-    def test_speak_returns_502_when_nest_missing(self):
+    def test_speak_returns_502_when_speaker_fails(self):
         def fail(*_args, **_kwargs):
-            raise app_module.nest.NestUnavailable("not found")
-        original = app_module.nest.speak
-        app_module.nest.speak = fail
+            raise app_module.speaker.SpeakerUnavailable("not found")
+        original = app_module.speaker.speak
+        app_module.speaker.speak = fail
         try:
             r = self.client.post("/api/speak", json={"text": "hi"})
         finally:
-            app_module.nest.speak = original
-        self.assertEqual((r.status_code, r.get_json()["error"]["code"]), (502, "nest_unavailable"))
+            app_module.speaker.speak = original
+        self.assertEqual((r.status_code, r.get_json()["error"]["code"]), (502, "speaker_unavailable"))
 
     def test_bottle_empty_needs_a_stable_reading(self):
         r = self.client.post("/api/bottle/empty")

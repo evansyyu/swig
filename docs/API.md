@@ -9,7 +9,7 @@ Units: grams (g), milliliters (ml). Times are ISO 8601.
 | GET | `/api/status` | App | Progress and lock decision (poll every 5 s) |
 | GET / POST | `/api/settings` | App | Read / change settings |
 | POST | `/api/bottle/empty` | App | Save the empty bottle weight (onboarding) |
-| POST | `/api/speak` | Testing | Make the Nest Mini speak |
+| POST | `/api/speak` | Testing | Make the JBL speaker speak |
 | POST | `/api/reset` | Demo | Reset today's total and the lock |
 | POST | `/api/demo/override` | Demo | Force a status |
 
@@ -77,7 +77,7 @@ No body. Saves the weight now on the scale as the empty bottle (include the lid 
 
 ## POST /api/speak
 
-`{ "text": "optional phrase" }` plays on the Nest Mini (default: saved `message`). Returns `202`, or `502` if the Nest is not found.
+`{ "text": "optional phrase" }` plays on the JBL speaker (default: saved `message`). Returns `202` after playback, or `502` if speech could not be generated or played.
 
 ## POST /api/reset
 
@@ -93,7 +93,7 @@ No body. Returns `{ "ok": true }`.
 { "error": { "code": "invalid_value", "message": "volume must be between 0 and 1" } }
 ```
 
-Codes: `invalid_value` (400), `unknown_field` (400), `no_stable_reading` (409), `nest_unavailable` (502).
+Codes: `invalid_value` (400), `unknown_field` (400), `no_stable_reading` (409), `speaker_unavailable` (502).
 
 ---
 
