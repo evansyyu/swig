@@ -8,6 +8,7 @@
 
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include "HX711.h"
 #include "secrets.h"
 
@@ -26,6 +27,14 @@ const int   EMPTY_READINGS    = 6;     // about 3 seconds of empty before re-zer
 HX711 scale;
 int emptyCount = 0;
 
+// http:// for a server on the local network, https:// for a cloud host (Railway).
+// The client and HTTPClient are global so the connection (and TLS session) is
+// reused between readings instead of reconnecting twice a second.
+const bool USE_HTTPS = strncmp(SERVER_URL, "https://", 8) == 0;
+WiFiClient plainClient;
+WiFiClientSecure secureClient;
+HTTPClient http;
+
 void connectWiFi() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -42,9 +51,7 @@ void sendWeight(float grams) {
     WiFi.reconnect();
     return;
   }
-  HTTPClient http;
-  http.setTimeout(2000);
-  http.begin(SERVER_URL);
+  http.begin(USE_HTTPS ? secureClient : plainClient, SERVER_URL);
   http.addHeader("Content-Type", "application/json");
   int code = http.POST("{\"grams\":" + String(grams, 1) + "}");
   if (code != 200) {
@@ -70,6 +77,10 @@ void setup() {
   scale.tare(10);
 
   connectWiFi();
+
+  secureClient.setInsecure();  // skip certificate check: fine for a demo
+  http.setReuse(true);
+  http.setTimeout(USE_HTTPS ? 5000 : 2000);
 }
 
 void loop() {

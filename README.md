@@ -43,6 +43,8 @@ Speech uses ElevenLabs and plays on a JBL paired with the server computer over B
 
 Open `http://<server-ip>:<PORT>/` on a phone for a test page. No scale yet? `python3 simulate.py 500 450` fakes a sip.
 
+**Cloud:** the server can also run on Railway without speech. See [Deploy on Railway](server/README.md#deploy-on-railway).
+
 **Firmware:** see [`firmware/README.md`](firmware/README.md). **App:** see [`ios-app/README.md`](ios-app/README.md).
 
 **Network:** the server, ESP32, and phone must share one 2.4 GHz network. Venue WiFi often blocks device-to-device traffic, so use a phone hotspot (turn on Maximize Compatibility on iPhone) or a small router.

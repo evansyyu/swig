@@ -36,7 +36,7 @@ Wire colors vary. If the reading goes down when you press, swap white and green.
 
 ## Using `scale_firmware`
 
-1. Copy `secrets.h.example` to `secrets.h` and fill in the WiFi name, password, and server IP. `secrets.h` is gitignored. Never commit it.
+1. Copy `secrets.h.example` to `secrets.h` and fill in the WiFi name, password, and server URL (local IP, or the `https://` Railway domain). `secrets.h` is gitignored. Never commit it.
 2. Run `hx711_calibration`, then paste the `CALIBRATION_FACTOR` into `scale_firmware.ino`.
 3. Power on with the platform **empty**, then upload.
 4. The ESP32 only supports 2.4 GHz WiFi. On an iPhone hotspot, turn on **Maximize Compatibility**.
