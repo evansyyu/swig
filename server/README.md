@@ -47,6 +47,22 @@ See the [ElevenLabs quickstart](https://elevenlabs.io/docs/eleven-api/quickstart
 | `PORT` | `5000` | Use `5001` on macOS (AirPlay Receiver holds 5000) |
 | `DEBUG_WEIGHT` | off | `DEBUG_WEIGHT=1` prints every reading |
 
+## Deploy on Railway
+
+Railway runs tracking, the settings API, and the test page. Speech does not
+work there (no speaker), so reminders are only logged.
+
+1. Railway → **New Project → Deploy from GitHub repo** → `WaterAlarmi`.
+2. **Settings → Root Directory:** `server`. `railway.json` sets the start command.
+3. **Settings → Networking → Generate Domain.**
+4. Leave `PORT` unset; Railway provides it. ElevenLabs variables are not needed.
+5. Check `https://<domain>/`, then set the firmware `SERVER_URL` to
+   `https://<domain>/weight` and point the app at `https://<domain>`.
+
+State is in memory, so every redeploy or restart resets today's total and the
+settings. There is no auth: anyone with the URL can post weights or change
+settings, so keep the URL private.
+
 ## Test
 
 ```bash
