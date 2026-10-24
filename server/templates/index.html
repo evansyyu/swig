@@ -1,0 +1,57 @@
+<!doctype html>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WaterAlarmi</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 420px; margin: 24px auto; padding: 0 16px; }
+  label { display: block; margin: 10px 0 2px; font-size: 14px; }
+  input { width: 100%; padding: 8px; font-size: 16px; box-sizing: border-box; }
+  button { margin: 8px 8px 0 0; padding: 10px 16px; font-size: 16px; }
+  #progress { font-size: 22px; margin: 8px 0; }
+</style>
+<h2>WaterAlarmi</h2>
+<p id="progress">Loading...</p>
+<p id="state"></p>
+
+<label>Goal (ml) <input id="goal_ml" type="number"></label>
+<label>Interval (min) <input id="interval_min" type="number"></label>
+<label>Start hour <input id="start_hour" type="number"></label>
+<label>End hour <input id="end_hour" type="number"></label>
+<label>Message <input id="message"></label>
+<label>Volume (0 to 1) <input id="volume" type="number" step="0.1" min="0" max="1"></label>
+<button onclick="save()">Save</button>
+<button onclick="post('/api/speak', {})">Test speaker</button>
+<button onclick="post('/api/reset', {})">Reset today</button>
+
+<script>
+const ids = ["goal_ml", "interval_min", "start_hour", "end_hour", "message", "volume"];
+let loaded = false;
+
+async function post(path, body) {
+  const res = await fetch(path, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  if (!res.ok) alert((await res.json()).error.message);
+  refresh();
+}
+
+async function refresh() {
+  const st = await (await fetch("/api/status")).json();
+  document.getElementById("progress").textContent = `Today: ${st.total_ml} / ${st.goal_ml} ml`;
+  document.getElementById("state").textContent = `Status: ${st.status}` + (st.should_lock ? " (apps locked)" : "");
+  if (!loaded) {  // fill the form once so typing is not overwritten
+    const s = await (await fetch("/api/settings")).json();
+    ids.forEach(k => document.getElementById(k).value = s[k]);
+    loaded = true;
+  }
+}
+
+function save() {
+  const body = {};
+  ids.forEach(k => {
+    const v = document.getElementById(k).value;
+    body[k] = k === "message" ? v : Number(v);
+  });
+  post("/api/settings", body);
+}
+
+refresh();
+setInterval(refresh, 5000);
+</script>
