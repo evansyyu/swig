@@ -6,9 +6,9 @@ import os
 import threading
 import time
 
-from flask import Flask, jsonify, render_template, request, send_from_directory
+from flask import Flask, jsonify, render_template, request
 
-import nest
+import speaker
 from tracker import Tracker, ValidationError
 
 app = Flask(__name__)
@@ -82,9 +82,9 @@ def speak_now():
     data = request.get_json(silent=True) or {}
     text = data.get("text") or tracker.settings["message"]
     try:
-        nest.speak(text, tracker.settings["volume"])
-    except nest.NestUnavailable as exc:
-        return error("nest_unavailable", str(exc), 502)
+        speaker.speak(text, tracker.settings["volume"])
+    except speaker.SpeakerUnavailable as exc:
+        return error("speaker_unavailable", str(exc), 502)
     return jsonify(ok=True), 202
 
 
@@ -106,11 +106,6 @@ def demo_override():
 
 
 # ---- Static pieces ----
-@app.get("/audio/<path:name>")
-def audio(name):
-    return send_from_directory(nest.AUDIO_DIR, name)
-
-
 @app.get("/")
 def index():
     return render_template("index.html")
@@ -122,9 +117,9 @@ REFILL_MESSAGE = "Your bottle is almost empty. Time to refill!"
 
 def say(text):
     try:
-        nest.speak(text, tracker.settings["volume"])
-    except nest.NestUnavailable as exc:
-        print(f"[speak] Nest unavailable: {exc}")  # TODO: buzzer / laptop speaker fallback
+        speaker.speak(text, tracker.settings["volume"])
+    except speaker.SpeakerUnavailable as exc:
+        print(f"[speak] speaker unavailable: {exc}")
 
 
 def reminder_loop():
@@ -138,5 +133,5 @@ def reminder_loop():
 
 if __name__ == "__main__":
     threading.Thread(target=reminder_loop, daemon=True).start()
-    print(f"Server on http://{nest.lan_ip()}:{nest.PORT}  (put this IP in firmware secrets.h)")
-    app.run(host="0.0.0.0", port=nest.PORT)
+    print(f"Server on http://{speaker.lan_ip()}:{speaker.PORT}  (put this IP in firmware secrets.h)")
+    app.run(host="0.0.0.0", port=speaker.PORT)

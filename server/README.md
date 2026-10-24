@@ -6,7 +6,7 @@ Flask server implementing [`docs/API.md`](../docs/API.md).
 | --- | --- |
 | `app.py` | Routes, validation, reminder loop |
 | `tracker.py` | Drink detection, status, lock logic (pure Python, easy to test) |
-| `nest.py` | Plays speech on the Nest Mini (ElevenLabs + pychromecast) |
+| `speaker.py` | Plays speech on the JBL speaker (ElevenLabs + local playback) |
 | `templates/index.html` | Simple settings and progress page |
 | `simulate.py` | Sends fake weights so you can test without the scale |
 
@@ -21,38 +21,30 @@ python3 app.py
 
 It prints the server IP. Put it in the firmware's `secrets.h`.
 
-### ElevenLabs and Nest Mini setup
+### ElevenLabs and JBL speaker setup
 
-1. Set up the Nest Mini in Google Home and note its exact device name.
-2. Connect the server and Nest to the same local network. For the full demo,
-   connect the ESP32 and phone there too; a shared 2.4 GHz network is convenient.
-   Avoid guest networks or access points that block device-to-device traffic.
-3. Copy `server/.env.example` to `server/.env` and fill in
-   `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`, and `NEST_NAME`.
+1. Pair the JBL with the server computer over Bluetooth and select it as the
+   sound output (macOS: Control Center → Sound; Windows: Settings → Sound).
+2. Copy `server/.env.example` to `server/.env` and fill in
+   `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID`.
    Choose a voice available to your ElevenLabs account. Keep the key on the
    server; never put it in firmware, the phone app, or a commit.
-4. If auto-detection chooses a VPN or the wrong interface, set `SERVER_IP` to
-   the server computer's local Wi-Fi IPv4 address. The speaker downloads the
-   MP3 from `http://<SERVER_IP>:<PORT>/audio/<filename>`, so do not use localhost.
-   Allow inbound traffic to the server port on your private network.
-5. Start with `python3 app.py` (or `python app.py` on Windows). Use this entry
+3. Start with `python3 app.py` (or `python app.py` on Windows). Use this entry
    point to start both Flask and the background reminder loop.
 
 The server loads `.env` from this folder regardless of the working directory.
-Existing environment variables take precedence. The local Cast connection
-requires no Google API key. ElevenLabs only generates the MP3; Flask serves it
-and PyChromecast tells the Nest to play it.
+Existing environment variables take precedence. ElevenLabs generates the MP3 and
+the computer plays it on its default output: `afplay` on macOS, Windows Media
+Player through PowerShell on Windows, `ffplay` or `mpg123` on Linux.
 
-See the [ElevenLabs quickstart](https://elevenlabs.io/docs/eleven-api/quickstart/)
-and [PyChromecast documentation](https://github.com/home-assistant-libs/pychromecast).
+See the [ElevenLabs quickstart](https://elevenlabs.io/docs/eleven-api/quickstart/).
 
 | Env var | Default | Use |
 | --- | --- | --- |
 | `ELEVENLABS_API_KEY` | none | Required to generate new speech |
 | `ELEVENLABS_VOICE_ID` | none | Required; voice available to your ElevenLabs account |
-| `NEST_NAME` | `Nest Mini` | Device name in the Google Home app |
-| `SERVER_IP` | auto-detected | Set it if the wrong IP is picked |
-| `PORT` | `5000` | |
+| `SERVER_IP` | auto-detected | Set it if the wrong IP is printed for the firmware |
+| `PORT` | `5000` | Use `5001` on macOS (AirPlay Receiver holds 5000) |
 | `DEBUG_WEIGHT` | off | `DEBUG_WEIGHT=1` prints every reading |
 
 ## Test
@@ -82,15 +74,15 @@ Invoke-RestMethod -Method Post -Uri "http://localhost:5000/api/speak" `
   -Body '{"text":"Hello! WaterAlarmi is connected. Time to drink some water!"}'
 ```
 
-Expected: the Nest plays the phrase and the endpoint returns `{ "ok": true }`
-with HTTP 202. This confirms dispatch, not that the speaker finished playback.
+Expected: the JBL plays the phrase and the endpoint returns `{ "ok": true }`
+with HTTP 202 once playback finishes.
 Repeat the request to reuse cached audio without another ElevenLabs request.
 
 | Symptom | Check |
 | --- | --- |
 | `could not generate speech` | `.env` values, voice access, API credits, and internet connection |
-| Device not found | Exact `NEST_NAME`, shared network, and multicast/device isolation |
-| Connected but silent | `SERVER_IP`, firewall, port, speaker volume; open an `/audio/...` URL from another device |
+| `playback failed` | Audio player missing (Linux: install `ffplay` or `mpg123`) |
+| Returns 202 but silent | JBL still paired and selected as the output, system and JBL volume |
 
 Both scheduled drinking reminders and refill prompts use this speech path.
 Sip detection does not currently trigger spoken congratulations. Status overrides
@@ -98,9 +90,10 @@ change the status only; use `/api/speak` to test speech immediately.
 
 ## Notes
 
-- Nest Mini playback needs the server and the Nest on the same network. `pychromecast` changes between versions: if discovery fails, check the installed version's docs.
-- MP3s use `eleven_multilingual_v2` and are cached in `server/audio/` by provider, voice, model, and text. Changing the voice generates fresh audio; old gTTS files are not reused. Cache hits do not call ElevenLabs or need its API key (keep the same voice ID configured). **Generate the demo phrases before the event.** First-time generation needs internet; local playback still requires a working Cast network.
-- Failed or empty generations are not cached. Speech errors use the existing `502 nest_unavailable` response.
+- We moved from a Google Nest Mini to a JBL because the venue Wi-Fi blocked the Nest.
+- Speech plays on the server computer's sound output, so it only works when the server runs locally.
+- MP3s use `eleven_multilingual_v2` and are cached in `server/audio/` by provider, voice, model, and text. Changing the voice generates fresh audio; old gTTS files are not reused. Cache hits do not call ElevenLabs or need its API key (keep the same voice ID configured). **Generate the demo phrases before the event.** First-time generation needs internet.
+- Failed or empty generations are not cached. Speech errors return `502 speaker_unavailable`. Phrases play one at a time, never overlapping.
 - `.env` and generated audio are gitignored; `.env.example` contains placeholders only.
 - State is in memory. A restart resets today's total and the settings.
 - Detection thresholds (10 g drink, 30 g refill, 15 g bottle present) and status thresholds live as constants at the top of `tracker.py`.
