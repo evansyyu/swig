@@ -1,0 +1,27 @@
+# macOS / editors
+.DS_Store
+.vscode/
+.idea/
+
+# Secrets (this repo is public: never commit WiFi names, passwords, or API keys)
+secrets.h
+.env
+*.env
+
+# Server
+__pycache__/
+*.pyc
+.venv/
+venv/
+server/audio/
+server/data/
+
+# iOS / Expo app
+ios-app/node_modules/
+ios-app/ios/
+ios-app/android/
+ios-app/.expo/
+ios-app/dist/
+ios-app/build/
+*.mobileprovision
+*.p12
