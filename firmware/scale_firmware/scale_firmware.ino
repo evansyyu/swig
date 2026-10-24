@@ -1,116 +1,125 @@
-// WaterAlarmi scale firmware (Seeed Studio XIAO ESP32C3 + HX711 + 5 kg load cell)
-//
-// Reads the weight about twice a second and POSTs {"grams": ...} to the server
-// (see docs/API.md). Re-zeros itself when the platform stays empty, and when
-// the BOOT button is pressed.
-//
-// Setup: copy secrets.h.example to secrets.h and fill it in.
-
-#include <WiFi.h>
-#include <HTTPClient.h>
-#include <WiFiClientSecure.h>
 #include "HX711.h"
-#include "secrets.h"
+#include <Preferences.h>
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLE2902.h>
 
-// ---- Pins (XIAO ESP32C3) ----
-const int DT_PIN   = 4;   // D2
-const int SCK_PIN  = 5;   // D3
-const int TARE_PIN = 9;   // BOOT button, pressed = LOW
+BLECharacteristic* ch;
 
-// ---- Calibration: run firmware/hx711_calibration and paste the value here ----
-float CALIBRATION_FACTOR = 1.0;
-
-// ---- Auto tare ----
-const float EMPTY_THRESHOLD_G = 12.0;  // below this the platform counts as empty
-const int   EMPTY_READINGS    = 6;     // about 3 seconds of empty before re-zeroing
+const int DT_PIN   = 4;   // D2 on XIAO
+const int SCK_PIN  = 5;   // D3 on XIAO
+const int TARE_BTN = 9;   // BOOT button
 
 HX711 scale;
-int emptyCount = 0;
+Preferences prefs;
+float calFactor = 0;
 
-// http:// for a server on the local network, https:// for a cloud host (Railway).
-// The client and HTTPClient are global so the connection (and TLS session) is
-// reused between readings instead of reconnecting twice a second.
-const bool USE_HTTPS = strncmp(SERVER_URL, "https://", 8) == 0;
-WiFiClient plainClient;
-WiFiClientSecure secureClient;
-HTTPClient http;
-
-void connectWiFi() {
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(WIFI_SSID, WIFI_PASS);
-  Serial.print("Connecting to WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nConnected: " + WiFi.localIP().toString());
+String waitForLine() {
+  while (!Serial.available()) delay(10);
+  String s = Serial.readStringUntil('\n');
+  s.trim();
+  return s;
 }
 
-void sendWeight(float grams) {
-  if (WiFi.status() != WL_CONNECTED) {
-    WiFi.reconnect();
+void calibrate() {
+  Serial.println("\n--- CALIBRATION ---");
+  Serial.println("Remove everything from the scale, then press Enter.");
+  waitForLine();
+  scale.set_scale();        // reset to raw units
+  scale.tare(20);
+  Serial.println("Tared. Place a KNOWN weight on the scale.");
+  Serial.println("Type its weight in grams (e.g. 500) and press Enter:");
+  float known = waitForLine().toFloat();
+  if (known <= 0) {
+    Serial.println("Invalid weight, calibration cancelled.");
+    if (calFactor != 0) scale.set_scale(calFactor);
     return;
   }
-  http.begin(USE_HTTPS ? secureClient : plainClient, SERVER_URL);
-  http.addHeader("Content-Type", "application/json");
-  int code = http.POST("{\"grams\":" + String(grams, 1) + "}");
-  if (code != 200) {
-    Serial.println("POST failed: " + String(code));
-  }
-  http.end();
+  delay(1000);              // let it settle
+  long reading = scale.get_value(20);
+  calFactor = reading / known;
+  scale.set_scale(calFactor);
+  prefs.putFloat("cal", calFactor);
+  Serial.printf("Calibration factor: %.4f (saved)\n", calFactor);
+  Serial.println("Remove the weight. Done!\n");
 }
+
+// Restarts advertising after a disconnect so the phone can reconnect
+class MyServerCallbacks : public BLEServerCallbacks {
+  void onDisconnect(BLEServer* s) override {
+    s->getAdvertising()->start();
+  }
+};
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
+  BLEDevice::init("SWIG-SCALE");
+  BLEServer* server = BLEDevice::createServer();
+  server->setCallbacks(new MyServerCallbacks());
 
-  pinMode(TARE_PIN, INPUT_PULLUP);
+  BLEService* service = server->createService("12345678-1234-1234-1234-1234567890ab");
+  ch = service->createCharacteristic(
+         "abcd1234-5678-90ab-cdef-1234567890ab",
+         BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  ch->addDescriptor(new BLE2902());
+  service->start();
+  server->getAdvertising()->start();
+  Serial.println("BLE ready. Look for 'ESP32-Sensor'.");
+
+  //SETUP SCALE:
+  unsigned long start = millis();
+  while (!Serial && millis() - start < 3000) delay(10);
+  Serial.setTimeout(100000);
+
+  pinMode(TARE_BTN, INPUT_PULLUP);
+  prefs.begin("scale", false);
+  calFactor = prefs.getFloat("cal", 0);
 
   scale.begin(DT_PIN, SCK_PIN);
-  while (!scale.is_ready()) {
-    Serial.println("HX711 not found. Check wiring.");
-    delay(1000);
+  Serial.println("Waiting for HX711...");
+  while (!scale.is_ready()) delay(100);
+
+  scale.tare(20);
+  if (calFactor == 0) {
+    Serial.println("Not calibrated yet.");
+    calibrate();
+  } else {
+    scale.set_scale(calFactor);
+    Serial.printf("Loaded calibration factor: %.4f\n", calFactor);
   }
-  scale.set_scale(CALIBRATION_FACTOR);
-  Serial.println("Keep the platform EMPTY. Taring...");
-  delay(1000);
-  scale.tare(10);
-
-  connectWiFi();
-
-  secureClient.setInsecure();  // skip certificate check: fine for a demo
-  http.setReuse(true);
-  http.setTimeout(USE_HTTPS ? 5000 : 2000);
+  Serial.println("Commands: 't' = tare, 'c' = recalibrate");
 }
 
 void loop() {
-  // Manual tare: press the BOOT button (only after boot has finished)
-  if (digitalRead(TARE_PIN) == LOW) {
-    delay(50);
-    if (digitalRead(TARE_PIN) == LOW) {
-      scale.tare(10);
-      emptyCount = 0;
-      Serial.println("Tared (button)");
-      while (digitalRead(TARE_PIN) == LOW) delay(10);
-    }
+    float grams = -1;
+    if (Serial.available()) {
+    String cmd = Serial.readStringUntil('\n');
+    cmd.trim();
+    if (cmd == "t") { scale.tare(20); Serial.println("Tared."); }
+    else if (cmd == "c") calibrate();
   }
 
-  if (scale.is_ready()) {
-    float grams = scale.get_units(5);  // average of 5 readings
-    Serial.println(grams, 1);
-
-    // Auto tare: platform empty for about 3 seconds -> re-zero
-    if (fabs(grams) < EMPTY_THRESHOLD_G) {
-      if (++emptyCount >= EMPTY_READINGS) {
-        scale.tare(10);
-        emptyCount = 0;
-        Serial.println("Tared (auto)");
-      }
-    } else {
-      emptyCount = 0;
-    }
-
-    sendWeight(grams);
+  // BOOT button tare
+  static unsigned long lastPress = 0;
+  if (digitalRead(TARE_BTN) == LOW && millis() - lastPress > 500) {
+    lastPress = millis();
+    scale.tare(20);
+    Serial.println("Tared (button).");
   }
-  delay(200);
+
+  // Print weight
+  static unsigned long lastPrint = 0;
+  if (millis() - lastPrint >= 250 && scale.is_ready()) {
+    lastPrint = millis();
+    grams = scale.get_units(5);
+    if (fabs(grams) < 0.5) grams = 0;   // hide tiny noise around zero
+    Serial.printf("Weight: %.1f g\n", grams);
+  }
+
+  //SEND
+  String Sgram = String(grams);
+  ch->setValue(Sgram);           
+  ch->notify();
+  Serial.println(Sgram);
+  delay(1000);
 }
