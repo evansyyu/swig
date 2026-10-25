@@ -109,7 +109,7 @@ void calibrate() {
     settled = fabs(reading) >= CAL_MIN_COUNTS && fabs(a - b) <= 0.02 * fabs(reading);
   }
   if (!settled) {
-    Serial.println("No steady weight on the scale, calibration cancelled.");
+    Serial.println("No steady weight on the scale, calibration failed. Kept the previous calibration.");
     if (calFactor != 0) scale.set_scale(calFactor);
     setStatus("cal:failed");
     return;
