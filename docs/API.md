@@ -5,13 +5,24 @@ Units: grams (g), milliliters (ml). Times are ISO 8601.
 
 | Method | Path | Caller | Purpose |
 | --- | --- | --- | --- |
-| POST | `/weight` | Firmware | Send a weight reading (about 2 per second) |
-| GET | `/api/status` | App | Progress and lock decision (poll every 5 s) |
-| GET / POST | `/api/settings` | App | Read / change settings |
-| POST | `/api/bottle/empty` | App | Save the empty bottle weight (onboarding) |
-| POST | `/api/speak` | Testing | Make the JBL speaker speak |
+| POST | `/weight` | App (scale relay) | Send a weight reading (about 2 per second) |
+| GET | `/api/status` | Test page | Progress and lock decision (the app uses v2 `/me/status`) |
+| GET / POST | `/api/settings` | Test page | Read / change settings |
+| POST | `/api/bottle/empty` | Test page | Save the empty bottle weight |
+| POST | `/api/speak` | Testing | Speak on this computer's speaker |
 | POST | `/api/reset` | Demo | Reset today's total and the lock |
 | POST | `/api/demo/override` | Demo | Force a status |
+
+## The scale (BLE)
+
+The scale doesn't talk to the server itself. It advertises as `SWIG-SCALE` with service
+`12345678-1234-1234-1234-1234567890ab`, and the phone app relays each reading to `POST /weight`.
+
+| Characteristic | Properties | Content |
+| --- | --- | --- |
+| `abcd1234-5678-90ab-cdef-1234567890ab` | read, notify | Weight in grams as text (`"312.50"`), about twice a second once calibrated |
+| `abcd1235-5678-90ab-cdef-1234567890ab` | write | Commands: `t` tare, `c` calibrate, then the answers to its prompts (`ok`, the known grams, or `x` to cancel) |
+| `abcd1236-5678-90ab-cdef-1234567890ab` | read, notify | Calibration step: `cal:empty`, `cal:weight`, `cal:done`, `cal:cancelled` (`ready` at boot) |
 
 ## POST /weight
 
@@ -19,7 +30,8 @@ Units: grams (g), milliliters (ml). Times are ISO 8601.
 { "grams": 312.5 }
 ```
 
-Returns `{ "ok": true }`. Must answer fast; never wait for speech.
+Returns `{ "ok": true, "event": null, "needs_refill": false }`. `event` is the drink or refill this reading
+completed (same shape as `last_event`), so the relaying phone can react at once. Must answer fast; never wait for speech.
 
 ## GET /api/status
 
@@ -104,7 +116,7 @@ App endpoints need `Authorization: Bearer <token>`. Errors use the same shape as
 
 **The scale** belongs to the user who last called `POST /me/bottle/empty` with no body. Its drinks, refills and
 daily baseline are logged to that user, and that user's goal, interval and active hours drive the speaker.
-`/weight` and the firmware are unchanged.
+`/weight` stays unauthenticated.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
