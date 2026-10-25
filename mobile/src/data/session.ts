@@ -1,6 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 
 import { disableAppLock } from '@/lib/app-blocker';
+import { scheduleReminders } from '@/lib/voice';
 
 import { request } from './api';
 import { clearAll, readDays, readIntakes, readKv, readOutbox, writeKv } from './db';
@@ -88,6 +89,7 @@ export async function logIn(username: string, password: string) {
 
 export async function logOut() {
   stopSync();
+  scheduleReminders(null);
   await disableAppLock();
   await SecureStore.deleteItemAsync(TOKEN_KEY).catch(() => undefined);
   await clearAll();

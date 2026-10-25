@@ -109,7 +109,7 @@ export function BottleSetup({ context }: { context: 'onboarding' | 'settings' })
 
       <View style={{ gap: spacing.sm }}>
         <ThemedText variant="footnote" tone="secondary">
-          Keep your phone online and the Balance on Wi-Fi. Leave the bottle still while it&apos;s weighed.
+          Keep your phone online, with Bluetooth on and near the Balance. Leave the bottle still while it&apos;s weighed.
         </ThemedText>
         {(error ?? liveError) && (
           <ThemedText variant="subhead" tone="danger" selectable accessibilityLiveRegion="polite">

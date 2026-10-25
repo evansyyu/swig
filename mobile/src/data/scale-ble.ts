@@ -2,14 +2,16 @@ import { useSyncExternalStore } from 'react';
 import { PermissionsAndroid, Platform } from 'react-native';
 import { BleManager, State, type Device, type Subscription } from 'react-native-ble-plx';
 
+import { relayReading } from './scale-relay';
 import type { BleScale, CalibrationStep } from './types';
 
 /**
- * Bluetooth link to the Balance (scale/scale.ino). The scale notifies its weight as a
- * string ("123.45"); calibration runs on the scale and is driven from here by answering
- * its prompts over the command characteristic. Values over BLE are base64.
+ * Bluetooth link to the Balance (firmware/scale_firmware). The scale notifies its weight as a
+ * string ("123.45"), which is relayed to the server; calibration runs on the scale and is
+ * driven from here by answering its prompts over the command characteristic. Values over
+ * BLE are base64. With the bluetooth-central background mode, iOS keeps delivering readings
+ * (and relaying them) while the app is in the background.
  */
-const NAME = 'SWIG-SCALE';
 const SERVICE = '12345678-1234-1234-1234-1234567890ab';
 const WEIGHT = 'abcd1234-5678-90ab-cdef-1234567890ab';
 const COMMAND = 'abcd1235-5678-90ab-cdef-1234567890ab';
@@ -77,7 +79,14 @@ export async function connectScale() {
     return;
   }
   if (!wanted) return; // disconnected while the permission prompt was up
-  manager ??= new BleManager();
+  manager ??= new BleManager({
+    // Lets iOS relaunch the app in the background with the scale still connected.
+    restoreStateIdentifier: 'swig-scale',
+    restoreStateFunction: (restored) => {
+      const restoredDevice = restored?.connectedPeripherals[0];
+      if (restoredDevice && !device) void attach(restoredDevice);
+    },
+  });
   stateSub = manager.onStateChange((bleState) => {
     poweredOn = bleState === State.PoweredOn;
     if (poweredOn) {
@@ -113,14 +122,14 @@ export function disconnectScale() {
 function scan() {
   if (!manager || !wanted || !poweredOn || device) return;
   update({ link: 'scanning' });
-  // The scale advertises its name but not its service UUID, so match on the name.
-  void manager.startDeviceScan(null, null, (error, found) => {
+  // Filter on the service UUID: iOS only scans in the background with one.
+  void manager.startDeviceScan([SERVICE], null, (error, found) => {
     if (error) {
       update({ link: 'off', error: error.message });
       retry();
       return;
     }
-    if (!found || state.link !== 'scanning' || (found.localName !== NAME && found.name !== NAME)) return;
+    if (!found || state.link !== 'scanning') return;
     void manager?.stopDeviceScan();
     void attach(found);
   });
@@ -179,6 +188,7 @@ function onReading(text: string) {
   const grams = Number.parseFloat(text);
   if (Number.isNaN(grams)) return;
   update({ grams });
+  void relayReading(grams);
 }
 
 function onStatus(text: string, initial = false) {

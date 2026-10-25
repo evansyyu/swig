@@ -48,7 +48,7 @@ export function BalanceCard() {
       <View style={{ flex: 1, gap: spacing.xxs }}>
         <StatusDot on={connected} label={connected ? 'Balance connected' : 'Balance offline'} />
         <ThemedText variant="subhead" tone="secondary">
-          {connected ? bottle : live ? 'Check it’s powered and on Wi-Fi' : 'Last known state'}
+          {connected ? bottle : live ? 'Check it’s on and near your phone, with Bluetooth on' : 'Last known state'}
         </ThemedText>
       </View>
       {nextReminder && (

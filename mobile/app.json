@@ -92,7 +92,24 @@
         "react-native-ble-plx",
         {
           "neverForLocation": true,
+          "isBackgroundEnabled": true,
+          "modes": ["central"],
           "bluetoothAlwaysPermission": "Allow $(PRODUCT_NAME) to connect to your Balance scale"
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "enableRemoteNotifications": false,
+          "sounds": [
+            "./assets/sounds/reminder.wav",
+            "./assets/sounds/behind.wav",
+            "./assets/sounds/critical.wav",
+            "./assets/sounds/locked.wav",
+            "./assets/sounds/refill.wav",
+            "./assets/sounds/sip.wav",
+            "./assets/sounds/goal.wav"
+          ]
         }
       ],
       "@bacons/apple-targets"

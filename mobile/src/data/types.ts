@@ -1,4 +1,4 @@
-/** Shapes from the WaterAlarmi v2 API (see WaterAlarmi/docs/API.md). */
+/** Shapes from the WaterAlarmi v2 API (see docs/API.md). */
 
 export type HydrationStatus = 'ahead' | 'ok' | 'behind' | 'critical';
 
@@ -98,7 +98,7 @@ export type SyncResponse = {
   leaderboard: Leaderboard;
 };
 
-/** Bluetooth link to the Balance (see scale/scale.ino). */
+/** Bluetooth link to the Balance (see firmware/scale_firmware). */
 export type ScaleLink = 'off' | 'scanning' | 'connecting' | 'connected';
 
 /**

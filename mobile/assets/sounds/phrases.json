@@ -1,0 +1,9 @@
+{
+  "reminder": "Hey! Time for a sip of water.",
+  "behind": "You're falling behind on water. Grab your bottle and take a few sips.",
+  "critical": "You're way behind on water. Drink some right now!",
+  "locked": "Your apps are locked until you drink some water.",
+  "refill": "Your bottle is almost empty. Time to refill!",
+  "sip": "Nice sip! Keep it up.",
+  "goal": "You hit your water goal for today. Amazing!"
+}
