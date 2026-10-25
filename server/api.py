@@ -117,7 +117,8 @@ async def lifespan(_app):
     init_db()
     legacy.tracker.listeners.append(on_scale_event)
     restore_scale_owner()
-    if os.environ.get("REMINDERS", "1") == "1":
+    # The phone app plays reminders now; set REMINDERS=1 to also speak them on this computer.
+    if os.environ.get("REMINDERS", "0") == "1":
         threading.Thread(target=legacy.reminder_loop, daemon=True).start()
     hub.loop = asyncio.get_running_loop()
     ticker = hub.loop.create_task(hub.tick_forever())

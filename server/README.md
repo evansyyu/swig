@@ -10,7 +10,8 @@ Flask server implementing [`docs/API.md`](../docs/API.md).
 | `db.py`, `models.py`, `security.py` | Database (Postgres or SQLite), tables, passwords and tokens |
 | `seed_demo.py` | Fills the leaderboard with demo users |
 | `tracker.py` | Drink detection, status, lock logic (pure Python, easy to test) |
-| `speaker.py` | Plays speech on the JBL speaker (ElevenLabs + local playback) |
+| `make_phrases.py` | Generates the app's voice clips (`mobile/assets/sounds/*.wav`) with ElevenLabs |
+| `speaker.py` | Optional: speaks on this computer's speaker (ElevenLabs + local playback) |
 | `templates/index.html` | Simple settings and progress page |
 | `simulate.py` | Sends fake weights so you can test without the scale |
 
@@ -23,9 +24,27 @@ cp .env.example .env      # PowerShell: Copy-Item .env.example .env
 python3 app.py
 ```
 
-It prints the server IP. Put it in the firmware's `secrets.h`.
+It prints the server's LAN address. To use a local server from the phone, set
+`EXPO_PUBLIC_API_URL=http://<that IP>:<PORT>` in `mobile/.env`.
 
-### ElevenLabs and JBL speaker setup
+The scale reaches the server through the phone: the app relays each BLE reading to `POST /weight`.
+
+### Voice clips for the app
+
+The JBL is paired to the phone, and the app speaks with bundled clips (see
+`mobile/src/lib/voice.ts`). Generate them once, and again whenever
+`mobile/assets/sounds/phrases.json` or the voice changes:
+
+```bash
+python3 make_phrases.py           # missing clips only; --force regenerates all
+```
+
+Then commit the `.wav` files and rebuild the app.
+
+### Optional: speak on this computer
+
+Server-side speech (the old JBL-on-the-laptop setup) is off by default, so it doesn't
+double up with the phone. To use it:
 
 1. Pair the JBL with the server computer over Bluetooth and select it as the
    sound output (macOS: Control Center → Sound; Windows: Settings → Sound).
@@ -33,8 +52,8 @@ It prints the server IP. Put it in the firmware's `secrets.h`.
    `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID`.
    Choose a voice available to your ElevenLabs account. Keep the key on the
    server; never put it in firmware, the phone app, or a commit.
-3. Start with `python3 app.py` (or `python app.py` on Windows). Use this entry
-   point to start both Flask and the background reminder loop.
+3. Start with `REMINDERS=1 python3 app.py` to run the background reminder loop.
+   `/api/speak` works either way.
 
 The server loads `.env` from this folder regardless of the working directory.
 Existing environment variables take precedence. ElevenLabs generates the MP3 and
@@ -47,16 +66,17 @@ See the [ElevenLabs quickstart](https://elevenlabs.io/docs/eleven-api/quickstart
 | --- | --- | --- |
 | `ELEVENLABS_API_KEY` | none | Required to generate new speech |
 | `ELEVENLABS_VOICE_ID` | none | Required; voice available to your ElevenLabs account |
-| `SERVER_IP` | auto-detected | Set it if the wrong IP is printed for the firmware |
+| `REMINDERS` | `0` | `1` speaks reminders and refill prompts on this computer |
+| `SERVER_IP` | auto-detected | Set it if the wrong LAN IP is printed |
 | `PORT` | `5000` | Use `5001` on macOS (AirPlay Receiver holds 5000) |
 | `DEBUG_WEIGHT` | off | `DEBUG_WEIGHT=1` prints every reading |
 
 ## Deploy on Railway
 
-Railway runs tracking, the settings API, and the test page. Speech does not
-work there (no speaker), so reminders are only logged.
+Railway runs tracking, accounts, sync, and the test page. It has no speaker; the app speaks.
 
-1. Railway → **New Project → Deploy from GitHub repo** → `WaterAlarmi`.
+1. Railway → **New Project → Deploy from GitHub repo** → `swig` (this monorepo).
+   For the existing service: **Settings → Source** → connect `swig`, branch `main`.
 2. **Settings → Root Directory:** `server`. `railway.json` sets the start command.
 3. **Settings → Networking → Generate Domain.**
 4. Leave `PORT` unset; Railway provides it. ElevenLabs variables are not needed.
@@ -64,8 +84,7 @@ work there (no speaker), so reminders are only logged.
    service. Without it, accounts live in a SQLite file that every redeploy wipes.
 6. Set `JWT_SECRET` (`python3 -c "import secrets; print(secrets.token_urlsafe(48))"`) and,
    optionally, `DEFAULT_TIMEZONE` (default `America/New_York`).
-7. Check `https://<domain>/health`, then set the firmware `SERVER_URL` to
-   `https://<domain>/weight` and point the app at `https://<domain>`.
+7. Check `https://<domain>/health`, then point the app at `https://<domain>` (`EXPO_PUBLIC_API_URL`).
 
 Accounts, intake history and streaks (v2) are stored in the database. The scale's live
 detection state (v1) is still in memory, so a restart resets the in-progress reading
@@ -108,16 +127,15 @@ Repeat the request to reuse cached audio without another ElevenLabs request.
 | `playback failed` | Audio player missing (Linux: install `ffplay` or `mpg123`) |
 | Returns 202 but silent | JBL still paired and selected as the output, system and JBL volume |
 
-Both scheduled drinking reminders and refill prompts use this speech path.
-Sip detection does not currently trigger spoken congratulations. Status overrides
-change the status only; use `/api/speak` to test speech immediately.
+With `REMINDERS=1`, scheduled drinking reminders and refill prompts use this speech path.
+Status overrides change the status only; use `/api/speak` to test speech immediately.
 
 ## Notes
 
-- We moved from a Google Nest Mini to a JBL because the venue Wi-Fi blocked the Nest.
-- Speech plays on the server computer's sound output, so it only works when the server runs locally.
+- We moved from a Google Nest Mini to a JBL because the venue Wi-Fi blocked the Nest, then moved the JBL from the server to the phone.
+- Server speech plays on the server computer's sound output, so it only works when the server runs locally.
 - MP3s use `eleven_multilingual_v2` and are cached in `server/audio/` by provider, voice, model, and text. Changing the voice generates fresh audio; old gTTS files are not reused. Cache hits do not call ElevenLabs or need its API key (keep the same voice ID configured). **Generate the demo phrases before the event.** First-time generation needs internet.
 - Failed or empty generations are not cached. Speech errors return `502 speaker_unavailable`. Phrases play one at a time, never overlapping.
 - `.env` and generated audio are gitignored; `.env.example` contains placeholders only.
-- State is in memory. A restart resets today's total and the settings.
+- Accounts, intake and streaks are in the database. The scale's detection state is in memory, so a restart resets the in-progress reading window.
 - Detection thresholds (10 g drink, 30 g refill, 15 g bottle present) and status thresholds live as constants at the top of `tracker.py`.

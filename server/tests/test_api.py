@@ -13,7 +13,23 @@ class ApiTests(unittest.TestCase):
     def test_weight_accepts_number(self):
         r = self.client.post("/weight", json={"grams": 312.5})
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.get_json(), {"ok": True})
+        self.assertEqual(r.get_json(), {"ok": True, "event": None, "needs_refill": False})
+
+    def test_weight_returns_the_detected_drink(self):
+        for _ in range(6):
+            self.client.post("/weight", json={"grams": 900})
+        for _ in range(5):
+            self.client.post("/weight", json={"grams": 800})
+        data = self.client.post("/weight", json={"grams": 800}).get_json()
+        self.assertEqual((data["event"]["type"], data["event"]["ml"]), ("drink", 100))
+
+    def test_weight_reports_a_low_bottle(self):
+        for grams in (200, 240):
+            for _ in range(6):
+                data = self.client.post("/weight", json={"grams": grams}).get_json()
+            if grams == 200:
+                self.client.post("/api/bottle/empty")
+        self.assertTrue(data["needs_refill"])
 
     def test_weight_rejects_bad_input(self):
         for body in ({}, {"grams": "x"}, {"grams": 99999}, {"grams": True}):
