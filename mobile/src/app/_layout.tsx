@@ -79,6 +79,12 @@ export default function RootLayout() {
               name="calibrate"
               options={{ presentation: 'modal', headerShown: true, title: 'Calibrate', headerShadowVisible: false }}
             />
+            {/* Reached only from Settings in dev builds; the clock offset is a no-op elsewhere. */}
+            <Stack.Screen
+              name="dev"
+              options={{ presentation: 'modal', headerShown: true, title: 'Developer', headerShadowVisible: false }}
+            />
+
             <Stack.Screen
               name="baseline"
               options={{

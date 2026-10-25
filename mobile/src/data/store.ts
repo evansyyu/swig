@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
+import { appNow } from './clock';
 import { deriveStatus, localDay } from './pace';
 import type { DayLog, Intake, Leaderboard, Mutation, Profile, Status } from './types';
 
@@ -50,7 +51,7 @@ export const initialState: AppState = {
   sync: { phase: 'idle', lastSyncedAt: null, error: null },
   live: false,
   baselineSeenDay: null,
-  now: Date.now(),
+  now: appNow(),
   profile: null,
   status: null,
   days: {},
@@ -77,7 +78,7 @@ export function setState(update: Partial<AppState> | ((prev: AppState) => Partia
 }
 
 export function resetState(patch: Partial<AppState> = {}) {
-  state = { ...initialState, now: Date.now() };
+  state = { ...initialState, now: appNow() };
   setState(patch);
 }
 

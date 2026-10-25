@@ -18,7 +18,7 @@ import { hourLabel, syncSummary } from '@/utils/intake';
 import type { SettingsFormProps } from './settings-form';
 
 /** iOS: a native SwiftUI Form on the brand background, tinted with the brand steel. */
-export function SettingsForm({ settings, onChange, lock, voice, bottle, sync, username, onLogOut }: SettingsFormProps) {
+export function SettingsForm({ settings, onChange, lock, voice, bottle, sync, username, onLogOut, dev }: SettingsFormProps) {
   const colors = useColors();
   const secondary = foregroundStyle(colors.textSecondary);
   const chosen = voice.options.find((v) => v.id === voice.selected);
@@ -153,6 +153,16 @@ export function SettingsForm({ settings, onChange, lock, voice, bottle, sync, us
           </LabeledContent>
           <Button label="Log out" role="destructive" onPress={onLogOut} />
         </Section>
+
+        {dev && (
+          <Section title="Developer" footer={<Text>Dev builds only.</Text>}>
+            <Button onPress={dev.onOpen}>
+              <LabeledContent label="Developer tools">
+                <Text modifiers={[secondary]}>{`Clock: ${dev.clock}`}</Text>
+              </LabeledContent>
+            </Button>
+          </Section>
+        )}
       </Form>
     </Host>
   );

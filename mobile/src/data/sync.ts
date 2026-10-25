@@ -2,6 +2,7 @@ import NetInfo from '@react-native-community/netinfo';
 import { AppState, type NativeEventSubscription } from 'react-native';
 
 import { ApiError, request } from './api';
+import { appNow, onClockChange } from './clock';
 import { writeServerData } from './db';
 import * as live from './live';
 import { localDay } from './pace';
@@ -81,8 +82,10 @@ export function stopSync() {
 
 /** Re-derive time-based views (pace, lock, day rollover) from the local clock. */
 export function tick() {
-  setState({ now: Date.now() });
+  setState({ now: appNow() });
 }
+
+onClockChange(tick);
 
 export function requestSync(): Promise<void> {
   if (inflight) {
@@ -170,7 +173,7 @@ export async function applySyncResponse(response: SyncResponse, sentIds: string[
     leaderboard: response.leaderboard,
     outbox: s.outbox.filter((m) => !acked.has(m.id)),
     cursor: response.server_time,
-    now: Date.now(),
+    now: appNow(),
     sync: { phase: 'idle', lastSyncedAt, error: null },
   }));
 
@@ -192,5 +195,5 @@ export async function applySyncResponse(response: SyncResponse, sentIds: string[
 
 /** A pushed status (WebSocket). Views re-apply anything still in the outbox. */
 export function applyServerStatus(status: Status) {
-  setState({ statusBase: status, now: Date.now() });
+  setState({ statusBase: status, now: appNow() });
 }

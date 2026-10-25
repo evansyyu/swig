@@ -5,11 +5,13 @@ import { SettingsForm } from '@/components/settings-form';
 import { ThemedText } from '@/components/themed-text';
 import { updateSettings } from '@/data/actions';
 import { logOut } from '@/data/session';
+import { useClockOffset } from '@/data/clock';
 import { getState, useAppState } from '@/data/store';
 import { requestSync } from '@/data/sync';
 import type { Settings as SettingsValues } from '@/data/types';
 import { chooseApps, isAppBlockingSupported, useAppLockState } from '@/lib/app-blocker';
 import { say, setVoice, useVoiceChoice, VOICES } from '@/lib/voice';
+import { formatOffset } from '@/screens/dev';
 
 export function Settings() {
   const profile = useAppState((s) => s.profile);
@@ -18,6 +20,7 @@ export function Settings() {
   const lastSyncedAt = useAppState((s) => s.sync.lastSyncedAt);
   const lockState = useAppLockState();
   const voice = useVoiceChoice();
+  const clockOffset = useClockOffset();
   if (!profile) return null;
 
   const onChange = async (patch: Partial<SettingsValues>) => {
@@ -81,6 +84,7 @@ export function Settings() {
         }}
         sync={{ phase, pending, lastSyncedAt, onSyncNow: () => void requestSync() }}
         username={profile.username}
+        dev={__DEV__ ? { clock: formatOffset(clockOffset), onOpen: () => router.push('/dev') } : undefined}
         onLogOut={confirmLogOut}
       />
     </>

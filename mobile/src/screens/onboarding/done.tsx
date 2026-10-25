@@ -57,7 +57,7 @@ export function DoneStep() {
           All set, {profile.username}
         </ThemedText>
         <ThemedText variant="largeTitle" accessibilityRole="header">
-          A fresh start, saved.
+          Your water tracking journey begins here!
         </ThemedText>
         <ThemedText variant="body" tone="secondary">
           Your rhythm is saved to your account. Let&apos;s make room for a good habit.

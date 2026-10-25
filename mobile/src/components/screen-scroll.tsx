@@ -55,7 +55,9 @@ export function StepLayout({ children, footer }: { children: ReactNode; footer: 
   const colors = useColors();
   const insets = useSafeAreaInsets();
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    // Not collapsable: a formSheet lays out a ScrollView with at most a header beside it, so
+    // the footer must not flatten into siblings of the ScrollView (that blanks the sheet).
+    <View collapsable={false} style={{ flex: 1, backgroundColor: colors.background }}>
       <ScreenScroll contentContainerStyle={{ gap: spacing.xl }}>{children}</ScreenScroll>
       <View style={{ paddingHorizontal: gutter, paddingTop: spacing.md, paddingBottom: insets.bottom + spacing.md, gap: spacing.sm }}>
         {footer}

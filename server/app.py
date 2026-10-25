@@ -56,8 +56,11 @@ def weight():
     event = tracker.process(grams)
     if DEBUG_WEIGHT:
         print(f"weight {grams:8.1f} g" + (f"  -> {event}" if event else ""))
-    # The phone relaying the reading reacts to these right away (sound, sync), even in the background.
-    return jsonify(ok=True, event=event, needs_refill=tracker.live()["needs_refill"])
+    # The phone relaying the reading reacts to these right away (sound, sync, setup screens),
+    # even in the background.
+    live = tracker.live()
+    return jsonify(ok=True, event=event, needs_refill=live["needs_refill"], stable=live["stable"],
+                   stable_g=live["stable_g"])
 
 
 # ---- App ----

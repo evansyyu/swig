@@ -1,6 +1,7 @@
 import { randomUUID } from 'expo-crypto';
 
 import { request } from './api';
+import { appNow } from './clock';
 import { cancelLocalIntake, writeKv, writeLocalMutation } from './db';
 import { localDay } from './pace';
 import { getState, setState } from './store';
@@ -16,13 +17,13 @@ function enqueue(mutation: Mutation, intake?: Intake) {
   setState((s) => ({
     outbox: [...s.outbox, mutation],
     ...(intake && { intakes: { ...s.intakes, [intake.id]: intake } }),
-    now: Date.now(),
+    now: appNow(),
   }));
   void writeLocalMutation(mutation, intake).then(() => requestSync());
 }
 
 export function logSip(amountMl: number) {
-  const at = new Date();
+  const at = new Date(); // real time: the dev clock offset never reaches recorded data
   const intake: Intake = {
     id: randomUUID(),
     day: localDay(at),
@@ -46,7 +47,7 @@ export function undoIntake(intakeId: string) {
   if (intake.pending && queuedAdd) {
     // Never reached the server: cancel both locally instead of sending add + void.
     const { [intakeId]: _removed, ...rest } = intakes;
-    setState((s) => ({ intakes: rest, outbox: s.outbox.filter((m) => m.id !== queuedAdd.id), now: Date.now() }));
+    setState((s) => ({ intakes: rest, outbox: s.outbox.filter((m) => m.id !== queuedAdd.id), now: appNow() }));
     void cancelLocalIntake(intakeId, queuedAdd.id);
     return;
   }

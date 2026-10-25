@@ -1,3 +1,4 @@
+import { appDate } from './clock';
 import type { HydrationStatus, Settings, Status } from './types';
 
 /**
@@ -27,7 +28,7 @@ export function computeStatus(total: number, goal: number, start: number, end: n
 }
 
 /** Local calendar day as YYYY-MM-DD (matches the server's per-user "day"). */
-export function localDay(date = new Date()) {
+export function localDay(date = appDate()) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');

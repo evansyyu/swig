@@ -7,6 +7,7 @@ import { Platform } from 'react-native';
 
 import phrases from '@/assets/sounds/phrases.json';
 import voiceInfo from '@/assets/sounds/voices.json';
+import { appDate, getClockOffset, onClockChange } from '@/data/clock';
 import { computeStatus, hourFloat } from '@/data/pace';
 import type { Settings } from '@/data/types';
 
@@ -150,7 +151,7 @@ export type ReminderPlan = Pick<Settings, 'goal_ml' | 'interval_min' | 'start_ho
  * interval after the last drink (or the day's start), then every interval until the day
  * ends. Tomorrow is included so reminders keep coming if the app isn't opened.
  */
-export function reminderTimes(plan: ReminderPlan, now = new Date()): { at: Date; totalMl: number }[] {
+export function reminderTimes(plan: ReminderPlan, now = appDate()): { at: Date; totalMl: number }[] {
   const interval = plan.interval_min * 60_000;
   const start = new Date(now);
   start.setHours(plan.start_hour, 0, 0, 0);
@@ -197,6 +198,9 @@ export function scheduleReminders(plan: ReminderPlan | null) {
   if (!running) void drain();
 }
 
+// Moving the dev clock moves every upcoming reminder.
+onClockChange(() => lastPlan !== undefined && scheduleReminders(lastPlan));
+
 async function drain() {
   running = true;
   try {
@@ -214,7 +218,7 @@ async function drain() {
           content: content(v, key),
           trigger: {
             type: Notifications.SchedulableTriggerInputTypes.DATE,
-            date: at,
+            date: new Date(at.getTime() - getClockOffset()), // `at` is app time; iOS fires on real time
             ...(Platform.OS === 'android' && { channelId: `${v}_${key}` }),
           },
         });

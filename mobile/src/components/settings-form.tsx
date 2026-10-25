@@ -18,10 +18,12 @@ export type SettingsFormProps = {
   sync: { phase: SyncPhase; pending: number; lastSyncedAt: string | null; onSyncNow: () => void };
   username: string;
   onLogOut: () => void;
+  /** Dev builds only: the Developer panel, with the clock offset in force. */
+  dev?: { clock: string; onOpen: () => void };
 };
 
 /** Android/web: universal @expo/ui (Jetpack Compose on Android), Material-style groups. */
-export function SettingsForm({ settings, onChange, lock, voice, bottle, sync, username, onLogOut }: SettingsFormProps) {
+export function SettingsForm({ settings, onChange, lock, voice, bottle, sync, username, onLogOut, dev }: SettingsFormProps) {
   const colors = useColors();
   const chosen = voice.options.find((v) => v.id === voice.selected);
   return (
@@ -134,6 +136,17 @@ export function SettingsForm({ settings, onChange, lock, voice, bottle, sync, us
             <ListItem supportingText="Signed in">{username}</ListItem>
             <ListItem onPress={onLogOut}>Log out</ListItem>
           </FieldGroup.Section>
+
+          {dev && (
+            <FieldGroup.Section title="Developer">
+              <ListItem onPress={dev.onOpen} supportingText="Dev builds only">
+                Developer tools
+                <ListItem.Trailing>
+                  <Text>{`Clock: ${dev.clock}`}</Text>
+                </ListItem.Trailing>
+              </ListItem>
+            </FieldGroup.Section>
+          )}
         </FieldGroup>
       </ScrollView>
     </Host>

@@ -107,10 +107,15 @@ export type ScaleLink = 'off' | 'scanning' | 'connecting' | 'connected';
  */
 export type CalibrationStep = 'idle' | 'starting' | 'empty' | 'taring' | 'weight' | 'measuring' | 'done' | 'cancelled';
 
+/** What the server said about the latest reading this phone relayed (`POST /weight`). */
+export type Relayed = { stable: boolean; stable_g: number | null; needs_refill: boolean };
+
 export type BleScale = {
   link: ScaleLink;
   /** Latest reading the scale sent, in grams. */
   grams: number | null;
+  /** The server's verdict on the last relayed reading; null until one lands or after a failed relay. */
+  relayed: Relayed | null;
   calibration: CalibrationStep;
   error: string | null;
 };

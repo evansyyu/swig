@@ -10,6 +10,7 @@ import { StatusDot } from '@/components/status-dot';
 import { TextButton } from '@/components/text-button';
 import { ThemedText } from '@/components/themed-text';
 import { markBaselineSeen } from '@/data/actions';
+import { appDate } from '@/data/clock';
 import { useAppState } from '@/data/store';
 import { requestSync } from '@/data/sync';
 import { useScaleLive } from '@/hooks/use-scale-live';
@@ -46,7 +47,7 @@ export function Baseline() {
     >
       <View style={{ gap: spacing.sm, paddingTop: spacing.lg }}>
         <ThemedText variant="eyebrow" tone="accent">
-          {formatLongDate(new Date())}
+          {formatLongDate(appDate())}
         </ThemedText>
         <ThemedText variant="largeTitle" accessibilityRole="header">
           Fill up.{'\n'}Find your starting point.

@@ -25,7 +25,7 @@ const STATUS_STEPS: Record<string, CalibrationStep> = {
   'cal:cancelled': 'cancelled',
 };
 
-let state: BleScale = { link: 'off', grams: null, calibration: 'idle', error: null };
+let state: BleScale = { link: 'off', grams: null, relayed: null, calibration: 'idle', error: null };
 const listeners = new Set<() => void>();
 
 let manager: BleManager | null = null;
@@ -181,14 +181,16 @@ function drop() {
   device = null;
   cancelPending = false;
   // A calibration the scale is still waiting on is picked up again on reconnect.
-  update({ link: 'off', grams: null, calibration: 'idle' });
+  update({ link: 'off', grams: null, relayed: null, calibration: 'idle' });
 }
 
 function onReading(text: string) {
   const grams = Number.parseFloat(text);
   if (Number.isNaN(grams)) return;
   update({ grams });
-  void relayReading(grams);
+  void relayReading(grams).then((relayed) => {
+    if (relayed !== undefined && device) update({ relayed }); // a late reply after a drop is stale
+  });
 }
 
 function onStatus(text: string, initial = false) {

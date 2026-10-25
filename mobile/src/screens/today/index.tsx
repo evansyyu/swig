@@ -9,7 +9,7 @@ import { ScreenScroll } from '@/components/screen-scroll';
 import { SettingsButton } from '@/components/settings-button';
 import { SyncPill } from '@/components/sync-pill';
 import { ThemedText } from '@/components/themed-text';
-import { undoIntake } from '@/data/actions';
+import { markBaselineSeen, undoIntake } from '@/data/actions';
 import { localDay } from '@/data/pace';
 import { getState, useAppState } from '@/data/store';
 import { requestSync } from '@/data/sync';
@@ -110,6 +110,7 @@ function useMorningBaselinePrompt() {
       const today = localDay();
       const hasBaseline = s.todayIntakes.some((i) => i.kind === 'baseline');
       if (s.profile?.scale_owner && s.status?.scale?.connected && !hasBaseline && s.baselineSeenDay !== today) {
+        markBaselineSeen();
         router.push('/baseline');
       }
     }, [])

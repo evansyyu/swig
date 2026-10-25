@@ -30,8 +30,11 @@ The scale doesn't talk to the server itself. It advertises as `SWIG-SCALE` with 
 { "grams": 312.5 }
 ```
 
-Returns `{ "ok": true, "event": null, "needs_refill": false }`. `event` is the drink or refill this reading
-completed (same shape as `last_event`), so the relaying phone can react at once. Must answer fast; never wait for speech.
+Returns `{ "ok": true, "event": null, "needs_refill": false, "stable": true, "stable_g": 312.4 }`. `event` is the
+drink or refill this reading completed (same shape as `last_event`), so the relaying phone can react at once.
+`stable` and `stable_g` are the same as in `GET /scale/live` (the weight has settled with a bottle on the scale,
+and the settled weight), so the relaying phone's setup screens update with every reading instead of polling.
+Must answer fast; never wait for speech.
 
 ## GET /api/status
 
