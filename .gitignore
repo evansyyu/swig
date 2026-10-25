@@ -16,12 +16,12 @@ venv/
 server/audio/
 server/data/
 
-# iOS / Expo app
-ios-app/node_modules/
-ios-app/ios/
-ios-app/android/
-ios-app/.expo/
-ios-app/dist/
-ios-app/build/
+# Expo app (mobile/.gitignore has the rest)
+mobile/node_modules/
+mobile/ios/
+mobile/android/
+mobile/.expo/
+mobile/dist/
+mobile/build/
 *.mobileprovision
 *.p12

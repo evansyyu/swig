@@ -4,7 +4,8 @@
 #include <BLEServer.h>
 #include <BLE2902.h>
 
-BLECharacteristic* ch;
+BLECharacteristic* ch;        // weight, notified as a string ("123.45")
+BLECharacteristic* statusCh;  // calibration step, read by the app on connect + notified
 
 const int DT_PIN   = 4;   // D2 on XIAO
 const int SCK_PIN  = 5;   // D3 on XIAO
@@ -14,9 +15,35 @@ HX711 scale;
 Preferences prefs;
 float calFactor = 0;
 
+// Last line the app wrote to the command characteristic. BLE runs on its own task,
+// so writes still arrive while calibrate() blocks loop().
+String bleLine;
+volatile bool bleLineReady = false;
+
+class CommandCallbacks : public BLECharacteristicCallbacks {
+  void onWrite(BLECharacteristic* c) override {
+    bleLine = String(c->getValue().c_str());
+    bleLine.trim();
+    bleLineReady = true;
+  }
+};
+
+// Tells the app which calibration step the scale is on
+void setStatus(const String& s) {
+  statusCh->setValue(s);
+  statusCh->notify();
+}
+
+// Next line from Serial or the app, whichever comes first
 String waitForLine() {
-  while (!Serial.available()) delay(10);
-  String s = Serial.readStringUntil('\n');
+  while (!Serial.available() && !bleLineReady) delay(10);
+  String s;
+  if (bleLineReady) {
+    s = bleLine;
+    bleLineReady = false;
+  } else {
+    s = Serial.readStringUntil('\n');
+  }
   s.trim();
   return s;
 }
@@ -24,15 +51,22 @@ String waitForLine() {
 void calibrate() {
   Serial.println("\n--- CALIBRATION ---");
   Serial.println("Remove everything from the scale, then press Enter.");
-  waitForLine();
+  setStatus("cal:empty");
+  if (waitForLine() == "x") {   // app backed out before anything changed
+    Serial.println("Calibration cancelled.");
+    setStatus("cal:cancelled");
+    return;
+  }
   scale.set_scale();        // reset to raw units
   scale.tare(20);
   Serial.println("Tared. Place a KNOWN weight on the scale.");
   Serial.println("Type its weight in grams (e.g. 500) and press Enter:");
+  setStatus("cal:weight");
   float known = waitForLine().toFloat();
   if (known <= 0) {
     Serial.println("Invalid weight, calibration cancelled.");
     if (calFactor != 0) scale.set_scale(calFactor);
+    setStatus("cal:cancelled");
     return;
   }
   delay(1000);              // let it settle
@@ -42,6 +76,7 @@ void calibrate() {
   prefs.putFloat("cal", calFactor);
   Serial.printf("Calibration factor: %.4f (saved)\n", calFactor);
   Serial.println("Remove the weight. Done!\n");
+  setStatus("cal:done");
 }
 
 // Restarts advertising after a disconnect so the phone can reconnect
@@ -62,6 +97,18 @@ void setup() {
          "abcd1234-5678-90ab-cdef-1234567890ab",
          BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
   ch->addDescriptor(new BLE2902());
+
+  // App -> scale: "c" = calibrate, "t" = tare, and the answers to calibrate()'s prompts
+  BLECharacteristic* cmdCh = service->createCharacteristic(
+         "abcd1235-5678-90ab-cdef-1234567890ab",
+         BLECharacteristic::PROPERTY_WRITE);
+  cmdCh->setCallbacks(new CommandCallbacks());
+
+  statusCh = service->createCharacteristic(
+         "abcd1236-5678-90ab-cdef-1234567890ab",
+         BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
+  statusCh->addDescriptor(new BLE2902());
+  statusCh->setValue("ready");
   service->start();
   server->getAdvertising()->start();
   Serial.println("BLE ready. Look for 'ESP32-Sensor'.");
@@ -92,12 +139,16 @@ void setup() {
 
 void loop() {
     float grams = -1;
+    String cmd;
     if (Serial.available()) {
-    String cmd = Serial.readStringUntil('\n');
-    cmd.trim();
+      cmd = Serial.readStringUntil('\n');
+      cmd.trim();
+    } else if (bleLineReady) {
+      cmd = bleLine;
+      bleLineReady = false;
+    }
     if (cmd == "t") { scale.tare(20); Serial.println("Tared."); }
     else if (cmd == "c") calibrate();
-  }
 
   // BOOT button tare
   static unsigned long lastPress = 0;
