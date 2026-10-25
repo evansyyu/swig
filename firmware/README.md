@@ -5,8 +5,8 @@ Arduino sketches for the scale unit: 5 kg bar load cell → HX711 → Seeed Stud
 | Sketch | Use it for |
 | --- | --- |
 | `hx711_test/` | First wiring check. Press the load cell and watch the numbers change |
-| `hx711_calibration/` | Find `CALIBRATION_FACTOR` with a known weight |
-| `scale_firmware/` | The real firmware: sends weight to the server over WiFi |
+| `hx711_calibration/` | Standalone calibration check (the real firmware calibrates itself) |
+| `scale_firmware/` | The real firmware: notifies the weight over BLE; the phone app relays it to the server |
 
 ## Wiring
 
@@ -36,9 +36,13 @@ Wire colors vary. If the reading goes down when you press, swap white and green.
 
 ## Using `scale_firmware`
 
-1. Copy `secrets.h.example` to `secrets.h` and fill in the WiFi name, password, and server URL (local IP, or the `https://` Railway domain). `secrets.h` is gitignored. Never commit it.
-2. Run `hx711_calibration`, then paste the `CALIBRATION_FACTOR` into `scale_firmware.ino`.
-3. Power on with the platform **empty**, then upload.
-4. The ESP32 only supports 2.4 GHz WiFi. On an iPhone hotspot, turn on **Maximize Compatibility**.
+1. Upload with the platform **empty** (it tares at boot). No WiFi or secrets needed.
+2. Calibrate once: in the app, Settings → Calibrate, or over Serial Monitor (115200 baud) with `c`.
+   Use something with a known weight. The factor is saved in flash and survives power cycles.
+   An uncalibrated scale waits at the calibration prompt and sends no weight until calibrated.
+3. The scale advertises as `SWIG-SCALE`. The app finds and connects to it by itself
+   (BLE details in [`docs/API.md`](../docs/API.md#the-scale-ble)).
 
-BOOT button (GPIO 9) re-zeros the scale. Don't hold it while powering on.
+The scale sends a reading about twice a second and re-zeros itself after about 3 seconds
+nearly empty (under 12 g). BOOT button (GPIO 9) or Serial `t` re-zeros it by hand. Don't hold
+BOOT while powering on.

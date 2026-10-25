@@ -1,8 +1,15 @@
+// Swig scale firmware (Seeed Studio XIAO ESP32C3 + HX711 + 5 kg load cell)
+//
+// Advertises as SWIG-SCALE over BLE and notifies the weight about twice a second.
+// The phone app relays each reading to the server's POST /weight (see docs/API.md).
+
 #include "HX711.h"
 #include <Preferences.h>
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLE2902.h>
+
+#define SERVICE_UUID "12345678-1234-1234-1234-1234567890ab"
 
 BLECharacteristic* ch;        // weight, notified as a string ("123.45")
 BLECharacteristic* statusCh;  // calibration step, read by the app on connect + notified
@@ -11,9 +18,16 @@ const int DT_PIN   = 4;   // D2 on XIAO
 const int SCK_PIN  = 5;   // D3 on XIAO
 const int TARE_BTN = 9;   // BOOT button
 
+// ---- Auto tare ----
+const float EMPTY_THRESHOLD_G = 12.0;  // below this the platform counts as empty
+const int   EMPTY_READINGS    = 6;     // about 3 seconds of empty before re-zeroing
+
+const unsigned long SEND_MS = 500;     // about 2 readings a second, as the server expects
+
 HX711 scale;
 Preferences prefs;
 float calFactor = 0;
+int emptyCount = 0;
 
 // Last line the app wrote to the command characteristic. BLE runs on its own task,
 // so writes still arrive while calibrate() blocks loop().
@@ -92,7 +106,7 @@ void setup() {
   BLEServer* server = BLEDevice::createServer();
   server->setCallbacks(new MyServerCallbacks());
 
-  BLEService* service = server->createService("12345678-1234-1234-1234-1234567890ab");
+  BLEService* service = server->createService(SERVICE_UUID);
   ch = service->createCharacteristic(
          "abcd1234-5678-90ab-cdef-1234567890ab",
          BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_NOTIFY);
@@ -110,8 +124,10 @@ void setup() {
   statusCh->addDescriptor(new BLE2902());
   statusCh->setValue("ready");
   service->start();
+  // iOS only finds devices in the background by service UUID, so advertise it.
+  server->getAdvertising()->addServiceUUID(SERVICE_UUID);
   server->getAdvertising()->start();
-  Serial.println("BLE ready. Look for 'ESP32-Sensor'.");
+  Serial.println("BLE ready. Look for 'SWIG-SCALE'.");
 
   //SETUP SCALE:
   unsigned long start = millis();
@@ -138,7 +154,6 @@ void setup() {
 }
 
 void loop() {
-    float grams = -1;
     String cmd;
     if (Serial.available()) {
       cmd = Serial.readStringUntil('\n');
@@ -155,22 +170,33 @@ void loop() {
   if (digitalRead(TARE_BTN) == LOW && millis() - lastPress > 500) {
     lastPress = millis();
     scale.tare(20);
+    emptyCount = 0;
     Serial.println("Tared (button).");
   }
 
-  // Print weight
-  static unsigned long lastPrint = 0;
-  if (millis() - lastPrint >= 250 && scale.is_ready()) {
-    lastPrint = millis();
-    grams = scale.get_units(5);
+  // Weigh and send. Uncalibrated readings are raw counts, so send nothing until calibrated.
+  static unsigned long lastSend = 0;
+  if (calFactor != 0 && millis() - lastSend >= SEND_MS && scale.is_ready()) {
+    lastSend = millis();
+    float grams = scale.get_units(5);
     if (fabs(grams) < 0.5) grams = 0;   // hide tiny noise around zero
+
+    // Auto tare: platform empty for about 3 seconds -> re-zero, so drift never builds up
+    if (fabs(grams) < EMPTY_THRESHOLD_G) {
+      if (++emptyCount >= EMPTY_READINGS && grams != 0) {
+        scale.tare(10);
+        grams = 0;
+        emptyCount = 0;
+        Serial.println("Tared (auto).");
+      }
+    } else {
+      emptyCount = 0;
+    }
+
+    String Sgram = String(grams);
+    ch->setValue(Sgram);
+    ch->notify();
     Serial.printf("Weight: %.1f g\n", grams);
   }
-
-  //SEND
-  String Sgram = String(grams);
-  ch->setValue(Sgram);           
-  ch->notify();
-  Serial.println(Sgram);
-  delay(1000);
+  delay(10);
 }
