@@ -252,12 +252,16 @@ def _met_days(session, user_ids=None):
 
 
 def streaks(met, today):
-    """(current, best). Today counts once the goal is met; a missed day resets to 0."""
-    day = today if today in met else today - timedelta(days=1)
+    """(current, best). The current run ends on the latest met day if that's yesterday or later:
+    today counts once the goal is met, a missed day resets to 0, and met days ahead of today
+    (logged with the app's developer clock offset) extend it, as they do the best run."""
+    latest = max(met, default=None)
     current = 0
-    while day in met:
-        current += 1
-        day -= timedelta(days=1)
+    if latest is not None and latest >= today - timedelta(days=1):
+        day = latest
+        while day in met:
+            current += 1
+            day -= timedelta(days=1)
     best = run = 0
     prev = None
     for day in sorted(met):

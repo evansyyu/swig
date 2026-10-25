@@ -140,6 +140,16 @@ class AccountTests(unittest.TestCase):
         self.assertEqual(board["entries"][0]["best_streak"], 4)
         self.assertEqual(board["me"]["rank"], 3)
 
+    def test_goal_met_on_a_dev_clock_day_counts_on_the_leaderboard(self):
+        auth = self.register()
+        self.register("mira.sips")
+        at = (NOW + timedelta(days=1)).isoformat()
+        data = self.sync(auth, [{"id": "1", "type": "intake.add",
+                                 "payload": {"id": str(uuid.uuid4()), "amount_ml": 2000, "at": at}}])
+        self.assertEqual((data["status"]["streak"], data["status"]["best_streak"]), (1, 1))
+        self.assertEqual(data["leaderboard"]["me"], {"rank": 1, "username": "alex.water", "streak": 1,
+                                                     "best_streak": 1, "is_me": True})
+
     def test_meeting_the_goal_extends_the_streak_today(self):
         auth = self.register()
         self.add_met_days("alex.water", [1, 2])
@@ -204,6 +214,13 @@ class StreakUnitTests(unittest.TestCase):
         self.assertEqual(accounts.streaks(met, today), (3, 3))
         self.assertEqual(accounts.streaks(met | {today}, today), (4, 4))
         self.assertEqual(accounts.streaks({today - timedelta(days=2)}, today), (0, 1))
+
+    def test_days_ahead_from_the_dev_clock_extend_the_current_streak(self):
+        today = date(2026, 10, 23)
+        met = {today - timedelta(days=1), today, today + timedelta(days=1), today + timedelta(days=2)}
+        self.assertEqual(accounts.streaks(met, today), (4, 4))
+        self.assertEqual(accounts.streaks({today + timedelta(days=1)}, today), (1, 1))  # today not met yet
+        self.assertEqual(accounts.streaks(set(), today), (0, 0))
 
 
 if __name__ == "__main__":

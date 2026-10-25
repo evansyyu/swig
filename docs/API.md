@@ -140,7 +140,8 @@ daily baseline are logged to that user, and that user's goal, interval and activ
 bottle (baseline) or the water added (refill).
 
 **Streak:** consecutive days with `consumed_ml >= goal_ml`. Today counts once the goal is met; a missed day resets
-it to 0. The leaderboard ranks by current streak (ties share a rank), never by volume.
+it to 0. Met days ahead of today (only possible with the app's developer clock, see `at` above) extend it. The
+leaderboard ranks by current streak (ties share a rank), never by volume.
 
 ## Offline sync
 
