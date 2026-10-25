@@ -18,9 +18,10 @@ import { hourLabel, syncSummary } from '@/utils/intake';
 import type { SettingsFormProps } from './settings-form';
 
 /** iOS: a native SwiftUI Form on the brand background, tinted with the brand steel. */
-export function SettingsForm({ settings, onChange, lock, bottle, sync, username, onLogOut }: SettingsFormProps) {
+export function SettingsForm({ settings, onChange, lock, voice, bottle, sync, username, onLogOut }: SettingsFormProps) {
   const colors = useColors();
   const secondary = foregroundStyle(colors.textSecondary);
+  const chosen = voice.options.find((v) => v.id === voice.selected);
   const lockFooter =
     lock.state.authorization === 'denied'
       ? 'Screen Time access is off. Turn it on in Settings › Screen Time to use the app lock.'
@@ -80,6 +81,25 @@ export function SettingsForm({ settings, onChange, lock, bottle, sync, username,
               </Text>
             ))}
           </Picker>
+        </Section>
+
+        <Section title="Voice" footer={<Text>{chosen ? `${chosen.name}: ${chosen.description}.` : 'Reminders play on your speaker.'}</Text>}>
+          {voice.options.length > 1 && (
+            <Picker
+              label="Speaker voice"
+              systemImage="waveform"
+              selection={voice.selected}
+              onSelectionChange={voice.onSelect}
+              modifiers={[pickerStyle('menu')]}
+            >
+              {voice.options.map((v) => (
+                <Text key={v.id} modifiers={[tag(v.id)]}>
+                  {v.name}
+                </Text>
+              ))}
+            </Picker>
+          )}
+          <Button label="Preview voice" systemImage="speaker.wave.2" onPress={voice.onPreview} />
         </Section>
 
         <Section

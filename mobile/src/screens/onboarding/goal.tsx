@@ -6,14 +6,17 @@ import { Card } from '@/components/card';
 import { GoalPicker } from '@/components/goal-picker';
 import { Icon } from '@/components/icon';
 import { PrimaryButton } from '@/components/primary-button';
+import { ProgressRing } from '@/components/progress-ring';
+import { RollingNumber } from '@/components/rolling-number';
 import { StepLayout } from '@/components/screen-scroll';
-import { StepProgress } from '@/components/step-progress';
 import { ThemedText } from '@/components/themed-text';
 import { DEFAULT_GOAL, GOAL_OPTIONS } from '@/constants/hydration';
 import { updateSettings } from '@/data/actions';
 import { getState } from '@/data/store';
 import { radius, spacing, useColors } from '@/theme';
 import { formatLiters } from '@/utils/format';
+
+const MAX_GOAL = Math.max(...GOAL_OPTIONS);
 
 export function GoalStep() {
   const colors = useColors();
@@ -34,10 +37,9 @@ export function GoalStep() {
         />
       }
     >
-      <StepProgress step={1} total={2} />
       <View style={{ gap: spacing.sm }}>
         <ThemedText variant="largeTitle" accessibilityRole="header">
-          A goal that feels like you.
+          First, let&apos;s set a daily goal for you.
         </ThemedText>
         <ThemedText variant="body" tone="secondary">
           Choose how much water you&apos;d like to drink each day.
@@ -55,29 +57,25 @@ export function GoalStep() {
             justifyContent: 'center',
           }}
         >
-          <View
-            style={{
-              width: 180,
-              height: 180,
-              borderRadius: radius.full,
-              borderWidth: 1,
-              borderColor: colors.accentMuted,
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: spacing.xxs,
-            }}
-          >
-            <Icon ios="drop" android="water_drop" size={24} color={colors.accent} />
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs }}>
-              <ThemedText variant="display" accessibilityLabel={`${formatLiters(goal)} liters every day`}>
-                {formatLiters(goal)}
+          {/* The ring fills to the goal's share of the largest option (3 L is a full circle). */}
+          <ProgressRing progress={goal / MAX_GOAL} size={180} stroke={8} duration={300}>
+            <View style={{ alignItems: 'center', gap: spacing.xxs }}>
+              <Icon ios="drop" android="water_drop" size={24} color={colors.accent} />
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs }}>
+                <RollingNumber
+                  value={formatLiters(goal)}
+                  variant="display"
+                  accessibilityLabel={`${formatLiters(goal)} liters every day`}
+                />
+                <ThemedText variant="title2" importantForAccessibility="no" accessibilityElementsHidden>
+                  L
+                </ThemedText>
+              </View>
+              <ThemedText variant="subhead" tone="secondary" importantForAccessibility="no" accessibilityElementsHidden>
+                every day
               </ThemedText>
-              <ThemedText variant="title2">L</ThemedText>
             </View>
-            <ThemedText variant="subhead" tone="secondary">
-              every day
-            </ThemedText>
-          </View>
+          </ProgressRing>
         </View>
       </View>
 

@@ -34,8 +34,7 @@ export function IntervalPicker({ value, onChange }: IntervalPickerProps) {
               }}
               modifiers={[listRowBackground(colors.surface)]}
             >
-              <HStack spacing={14}>
-                <Image systemName="clock" color={colors.accent} size={18} />
+              <HStack>
                 <Text modifiers={[font({ size: 17 }), foregroundStyle(colors.text)]}>{formatInterval(minutes)}</Text>
                 <Spacer />
                 {minutes === value && <Image systemName="checkmark" color={colors.accent} size={16} />}

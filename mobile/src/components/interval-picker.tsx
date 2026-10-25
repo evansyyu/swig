@@ -36,7 +36,6 @@ export function IntervalPicker({ value, onChange }: IntervalPickerProps) {
               borderColor: selected ? colors.accent : colors.border,
             }}
           >
-            <Icon ios="clock" android="schedule" size={22} color={selected ? colors.onAccent : colors.textSecondary} />
             <ThemedText variant="body" style={{ flex: 1, color: fg }}>
               {formatInterval(minutes)}
             </ThemedText>

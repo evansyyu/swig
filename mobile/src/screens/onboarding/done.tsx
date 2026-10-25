@@ -4,7 +4,6 @@ import { Card } from '@/components/card';
 import { Icon } from '@/components/icon';
 import { PrimaryButton } from '@/components/primary-button';
 import { StepLayout } from '@/components/screen-scroll';
-import { StepProgress } from '@/components/step-progress';
 import { ThemedText } from '@/components/themed-text';
 import { completeOnboarding } from '@/data/session';
 import { useAppState } from '@/data/store';
@@ -26,7 +25,6 @@ export function DoneStep() {
 
   return (
     <StepLayout footer={<PrimaryButton title="Start my day" onPress={() => void completeOnboarding()} />}>
-      <StepProgress step={2} total={2} />
       <View style={{ alignItems: 'center', paddingVertical: spacing.sm }}>
         <View
           style={{

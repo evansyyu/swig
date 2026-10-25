@@ -32,14 +32,21 @@ The scale reaches the server through the phone: the app relays each BLE reading 
 ### Voice clips for the app
 
 The JBL is paired to the phone, and the app speaks with bundled clips (see
-`mobile/src/lib/voice.ts`). Generate them once, and again whenever
-`mobile/assets/sounds/phrases.json` or the voice changes:
+`mobile/src/lib/voice.ts`). Each voice in `mobile/assets/sounds/voices.json` gets its own
+pack (`<voice>_<phrase>.wav`), and the user picks one in Settings › Voice. Generate the
+packs once, and again whenever `phrases.json` changes:
 
 ```bash
-python3 make_phrases.py           # missing clips only; --force regenerates all
+python3 make_phrases.py                 # missing clips, every voice
+python3 make_phrases.py --voice lily    # one voice
+python3 make_phrases.py --force         # regenerate all
 ```
 
-Then commit the `.wav` files and rebuild the app.
+To add a voice, add an entry to `voices.json` with its ElevenLabs voice ID (a lowercase
+slug as the key) and run the script. The `mascot` voice has no ID there; it uses
+`ELEVENLABS_VOICE_ID` from `.env`. The app bundles only voices whose clips all exist
+(`mobile/app.config.js`), so a missing pack never breaks the build; it just isn't offered.
+Then commit the `.wav` files and rebuild the app (notification sounds ship in the binary).
 
 ### Optional: speak on this computer
 
@@ -65,7 +72,7 @@ See the [ElevenLabs quickstart](https://elevenlabs.io/docs/eleven-api/quickstart
 | Env var | Default | Use |
 | --- | --- | --- |
 | `ELEVENLABS_API_KEY` | none | Required to generate new speech |
-| `ELEVENLABS_VOICE_ID` | none | Required; voice available to your ElevenLabs account |
+| `ELEVENLABS_VOICE_ID` | none | Voice for server speech and the app's `mascot` pack |
 | `REMINDERS` | `0` | `1` speaks reminders and refill prompts on this computer |
 | `SERVER_IP` | auto-detected | Set it if the wrong LAN IP is printed |
 | `PORT` | `5000` | Use `5001` on macOS (AirPlay Receiver holds 5000) |

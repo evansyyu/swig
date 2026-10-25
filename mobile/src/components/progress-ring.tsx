@@ -19,11 +19,13 @@ export function ProgressRing({
   progress,
   size = 232,
   stroke = 18,
+  duration = 700,
   children,
 }: {
   progress: number;
   size?: number;
   stroke?: number;
+  duration?: number;
   children?: ReactNode;
 }) {
   const colors = useColors();
@@ -34,12 +36,12 @@ export function ProgressRing({
   useEffect(() => {
     value.set(
       withTiming(Math.min(1, Math.max(0, progress)), {
-        duration: 700,
+        duration,
         easing: EASE_IN_OUT,
         reduceMotion: ReduceMotion.System,
       })
     );
-  }, [progress, value]);
+  }, [progress, duration, value]);
 
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: circumference * (1 - value.get()),

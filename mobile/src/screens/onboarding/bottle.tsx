@@ -7,7 +7,6 @@ import { HeroArt } from '@/components/hero-art';
 import { PrimaryButton } from '@/components/primary-button';
 import { StepLayout } from '@/components/screen-scroll';
 import { StatusDot } from '@/components/status-dot';
-import { StepProgress } from '@/components/step-progress';
 import { TextButton } from '@/components/text-button';
 import { ThemedText } from '@/components/themed-text';
 import { saveEmptyBottle } from '@/data/actions';
@@ -62,7 +61,6 @@ export function BottleSetup({ context }: { context: 'onboarding' | 'settings' })
         </>
       }
     >
-      {context === 'onboarding' && <StepProgress step={1} total={2} />}
       <View style={{ gap: spacing.sm }}>
         <ThemedText variant="largeTitle" accessibilityRole="header">
           First, an empty bottle.

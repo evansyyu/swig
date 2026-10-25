@@ -9,6 +9,7 @@ import { getState, useAppState } from '@/data/store';
 import { requestSync } from '@/data/sync';
 import type { Settings as SettingsValues } from '@/data/types';
 import { chooseApps, isAppBlockingSupported, useAppLockState } from '@/lib/app-blocker';
+import { say, setVoice, useVoiceChoice, VOICES } from '@/lib/voice';
 
 export function Settings() {
   const profile = useAppState((s) => s.profile);
@@ -16,6 +17,7 @@ export function Settings() {
   const pending = useAppState((s) => s.outbox.length);
   const lastSyncedAt = useAppState((s) => s.sync.lastSyncedAt);
   const lockState = useAppLockState();
+  const voice = useVoiceChoice();
   if (!profile) return null;
 
   const onChange = async (patch: Partial<SettingsValues>) => {
@@ -31,6 +33,12 @@ export function Settings() {
       if (!count) return;
     }
     updateSettings(patch);
+  };
+
+  const preview = () => {
+    if (!say('reminder')) {
+      Alert.alert('Notifications are off', 'Allow notifications for Sip in Settings to hear its voice.');
+    }
   };
 
   const confirmLogOut = () => {
@@ -64,6 +72,7 @@ export function Settings() {
         settings={profile}
         onChange={(patch) => void onChange(patch)}
         lock={{ supported: isAppBlockingSupported, state: lockState, onChooseApps: () => void chooseApps() }}
+        voice={{ options: VOICES, selected: voice, onSelect: setVoice, onPreview: preview }}
         bottle={{
           emptyG: profile.empty_g,
           scaleOwner: profile.scale_owner,

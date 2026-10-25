@@ -7,7 +7,6 @@ import { Icon } from '@/components/icon';
 import { IntervalPicker } from '@/components/interval-picker';
 import { PrimaryButton } from '@/components/primary-button';
 import { StepLayout } from '@/components/screen-scroll';
-import { StepProgress } from '@/components/step-progress';
 import { ThemedText } from '@/components/themed-text';
 import { DEFAULT_INTERVAL, INTERVAL_OPTIONS } from '@/constants/hydration';
 import { updateSettings } from '@/data/actions';
@@ -36,10 +35,9 @@ export function IntervalStep() {
         />
       }
     >
-      <StepProgress step={2} total={2} />
       <View style={{ gap: spacing.sm }}>
         <ThemedText variant="largeTitle" accessibilityRole="header">
-          A gentle nudge, at your pace.
+          How often should your reminders be?
         </ThemedText>
         <ThemedText variant="body" tone="secondary">
           Your speaker reminds you to pause for a sip when it&apos;s been a while.

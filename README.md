@@ -43,7 +43,7 @@ python3 app.py
 
 No scale yet? `python3 simulate.py 500 450` fakes a sip.
 
-**Voice clips:** put `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID` in `server/.env`, then `python3 server/make_phrases.py`. It writes `mobile/assets/sounds/*.wav` from `phrases.json`; commit them. The app build needs them.
+**Voice clips:** put `ELEVENLABS_API_KEY` and `ELEVENLABS_VOICE_ID` in `server/.env`, then `python3 server/make_phrases.py`. It writes one pack per voice in `voices.json` (`mobile/assets/sounds/<voice>_<phrase>.wav`); commit them. The app bundles every complete pack, and Settings › Voice picks one.
 
 **App:** `cd mobile && npm install`. It needs a development build on a real iPhone (Bluetooth and Screen Time don't work in Expo Go or the simulator): `npx expo run:ios --device` on a Mac. Ad-hoc and TestFlight builds need Apple's approval for the Family Controls entitlement. `EXPO_PUBLIC_API_URL` picks the server (default: the Railway deployment). See [`mobile/AGENTS.md`](mobile/AGENTS.md).
 
@@ -63,6 +63,7 @@ This repo is public. Never commit API keys or Apple signing files. `.env` files 
 - Merged the app (`evansyyu/swig`) and the server and firmware (`yoobinchang/WaterAlarmi`) into one repo, keeping both histories.
 - The scale now talks BLE to the phone, which relays readings to the server (was WiFi straight to the server).
 - Speech moved from the server's speaker to the phone: bundled ElevenLabs clips as notification sounds.
+- Choice of voices: one clip pack per ElevenLabs voice, picked per phone in Settings.
 - Switched from Google Nest Mini to a Bluetooth JBL speaker. The venue Wi-Fi blocked device-to-device traffic, so the Nest couldn't connect.
 
 ## Status
