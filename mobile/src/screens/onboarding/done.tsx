@@ -2,6 +2,7 @@ import { View } from 'react-native';
 
 import { Card } from '@/components/card';
 import { Icon } from '@/components/icon';
+import { Logo } from '@/components/logo';
 import { PrimaryButton } from '@/components/primary-button';
 import { StepLayout } from '@/components/screen-scroll';
 import { ThemedText } from '@/components/themed-text';
@@ -47,7 +48,7 @@ export function DoneStep() {
               justifyContent: 'center',
             }}
           >
-            <Icon ios="checkmark" android="check" size={36} color={colors.accent} weight="semibold" />
+            <Logo variant="mark" height={56} />
           </View>
         </View>
       </View>

@@ -18,6 +18,7 @@ STREAK_LOOKBACK_DAYS = 400
 INITIAL_INTAKE_DAYS = 35
 INITIAL_HISTORY_DAYS = 120
 MAX_BACKDATE = timedelta(days=7)
+MAX_FUTURE = timedelta(days=7)  # the app's developer clock offset logs on its shifted day
 # Pulls re-send rows updated this long before the cursor, so a row committed by
 # another request while this one was reading is never missed. The app upserts.
 SYNC_OVERLAP = timedelta(seconds=10)
@@ -186,9 +187,11 @@ def record_intake(session, user, *, kind, source, amount_ml, now, detail_ml=None
             return existing
     if isinstance(amount_ml, bool) or not isinstance(amount_ml, int) or not 0 <= amount_ml <= 3000:
         raise ValidationError("invalid_value", "amount_ml must be an integer from 0 to 3000")
-    at = now if at is None else min(at, now)  # a phone clock running fast can't log the future
+    at = now if at is None else at
     if now - at > MAX_BACKDATE:
         raise ValidationError("invalid_value", "at can be at most 7 days ago")
+    if at - now > MAX_FUTURE:
+        raise ValidationError("invalid_value", "at can be at most 7 days ahead")
     day = local_day(user, at)
     intake = Intake(user_id=user.id, day=day, kind=kind, source=source, amount_ml=amount_ml,
                     detail_ml=detail_ml, at=at, voided=False)

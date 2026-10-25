@@ -7,7 +7,7 @@ import type { DayLog, Intake, Mutation } from './types';
  * Reads happen once, synchronously, at startup (a few hundred rows at most); every
  * write after that is async on SQLite's own thread and serialized through `write`.
  */
-const db = openDatabaseSync('sip.db');
+const db = openDatabaseSync('swig.db');
 
 const SCHEMA_VERSION = 1;
 

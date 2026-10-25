@@ -27,8 +27,15 @@ const copy: Record<CalibrationStep, { title: string; body: string }> = {
   },
 };
 
-/** Runs the scale's calibrate() routine over Bluetooth, one prompt at a time. */
-export function Calibrate() {
+/** In onboarding, before the empty bottle is weighed (that weight is only right once calibrated). */
+const ONBOARDING_INTRO =
+  'So every sip is measured right. You need something with a known weight, like a 500 g pack or a full 1 L bottle. Already calibrated? Skip this.';
+
+/**
+ * Runs the scale's calibrate() routine over Bluetooth, one prompt at a time. Used in onboarding
+ * (then on to the empty bottle) and, as a modal, from Settings.
+ */
+export function Calibrate({ context }: { context: 'onboarding' | 'settings' }) {
   const colors = useColors();
   const link = useScale((s) => s.link);
   const grams = useScale((s) => s.grams);
@@ -56,6 +63,12 @@ export function Calibrate() {
     run(startCalibration);
   };
 
+  const finish = () => (context === 'onboarding' ? router.push('/bottle') : router.back());
+  const leave = () => {
+    cancelCalibration(); // a no-op unless the scale is mid-calibration
+    finish();
+  };
+
   const primary = ((): PrimaryButtonProps => {
     switch (step) {
       case 'idle':
@@ -67,7 +80,9 @@ export function Calibrate() {
       case 'weight':
         return { title: 'Calibrate', onPress: () => run(() => submitKnownWeight(knownGrams)), disabled: !(knownGrams > 0) };
       case 'done':
-        return { title: 'Done', onPress: () => router.back(), arrow: false };
+        return context === 'onboarding'
+          ? { title: 'Continue', onPress: finish }
+          : { title: 'Done', onPress: finish, arrow: false };
       default:
         return { title: 'Working', onPress: () => undefined, loading: true };
     }
@@ -78,7 +93,9 @@ export function Calibrate() {
       footer={
         <>
           <PrimaryButton {...primary} disabled={primary.disabled || !connected} />
-          {step !== 'done' && <TextButton title="Cancel" onPress={() => router.back()} />}
+          {step !== 'done' && (
+            <TextButton title={context === 'onboarding' ? 'Skip for now' : 'Cancel'} onPress={context === 'onboarding' ? leave : finish} />
+          )}
         </>
       }
     >
@@ -87,7 +104,7 @@ export function Calibrate() {
           {copy[step].title}
         </ThemedText>
         <ThemedText variant="body" tone="secondary" accessibilityLiveRegion="polite">
-          {copy[step].body}
+          {context === 'onboarding' && step === 'idle' ? ONBOARDING_INTRO : copy[step].body}
         </ThemedText>
       </View>
 

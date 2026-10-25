@@ -88,8 +88,8 @@ export function DevPanel() {
         </Card>
         <ThemedText variant="footnote" tone="secondary">
           Shifts what the app shows and schedules (today, pace, the morning prompt, reminders) without changing the
-          phone&apos;s clock. Sips are still logged at the real time, and the server keeps its own clock. The offset
-          stays until you reset it, even across reloads.
+          phone&apos;s clock. Sips the Balance detects are still logged at the real time, since the server keeps its
+          own clock. The offset stays until you reset it, even across reloads.
         </ThemedText>
       </View>
 
@@ -149,7 +149,8 @@ export function DevPanel() {
           </ThemedText>
         </PressableScale>
         <ThemedText variant="footnote" tone="secondary">
-          Logged as a manual sip at the real time, and synced like any other. Undo it from Today&apos;s log.
+          Logged as a manual sip at the app time above, so it counts toward the day the clock shows (up to 7 days
+          either way). Undo it from Today&apos;s log.
         </ThemedText>
       </View>
     </ScreenScroll>

@@ -125,7 +125,7 @@ daily baseline are logged to that user, and that user's goal, interval and activ
 | PATCH | `/me/settings` | Any of `goal_ml, interval_min, start_hour, end_hour, lock_enabled, timezone` (v1 ranges) |
 | GET | `/me/history?days=30` | Day logs: `{day, goal_ml, consumed_ml, met, met_at}` |
 | GET | `/me/intake?day=YYYY-MM-DD` | Intake events for a day (default today) |
-| POST | `/me/intake` | Manual log `{id?, amount_ml, at?}`. Send your own UUID `id` so retries are safe |
+| POST | `/me/intake` | Manual log `{id?, amount_ml, at?}`. Send your own UUID `id` so retries are safe. `at` (default now) may be up to 7 days back or ahead, and sets the day |
 | DELETE | `/me/intake/{id}` | Undo (marks it `voided`) |
 | POST | `/me/bottle/empty` | No body: weigh the bottle on the scale and take the scale. `{weight_g}`: save as given |
 | GET | `/scale/live` | `{connected, grams, stable, water_ml, empty_g, needs_refill, owner}` for the setup screen |

@@ -45,10 +45,11 @@ export default function OnboardingLayout() {
       <Stack.Screen name="goal" options={{ title: 'YOUR RHYTHM · 1 OF 2', ...withProgress(1, 2) }} />
       <Stack.Screen name="interval" options={{ title: 'YOUR RHYTHM · 2 OF 2', ...withProgress(2, 2) }} />
       <Stack.Screen name="apps" options={{ title: 'APP LOCK' }} />
-      <Stack.Screen name="bottle" options={{ title: 'BOTTLE SETUP · 1 OF 2', ...withProgress(1, 2) }} />
+      <Stack.Screen name="balance" options={{ title: 'BOTTLE SETUP · 1 OF 3', ...withProgress(1, 3) }} />
+      <Stack.Screen name="bottle" options={{ title: 'BOTTLE SETUP · 2 OF 3', ...withProgress(2, 3) }} />
       <Stack.Screen
         name="done"
-        options={{ title: 'BOTTLE SETUP · 2 OF 2', ...withProgress(2, 2), headerBackVisible: false, gestureEnabled: false }}
+        options={{ title: 'BOTTLE SETUP · 3 OF 3', ...withProgress(3, 3), headerBackVisible: false, gestureEnabled: false }}
       />
     </Stack>
   );

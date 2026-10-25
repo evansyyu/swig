@@ -4,10 +4,11 @@ import { useSyncExternalStore } from 'react';
 /**
  * The app's "now": real time plus an offset set from the Developer panel (dev builds only),
  * for testing day rollovers, pace and reminders without touching the phone's clock.
- * The offset moves what the app shows and schedules; what it records (sips, sync times)
- * stays on real time, and the server keeps its own clock.
+ * The offset moves what the app shows and schedules, and the Developer panel's manual sips (so
+ * they land on the shifted day). Everything else it records stays on real time, and the server
+ * keeps its own clock: drinks the scale detects are always on the real day.
  */
-const OFFSET_KEY = 'sip.devClockOffset';
+const OFFSET_KEY = 'swig.devClockOffset';
 const listeners = new Set<() => void>();
 let offsetMs = __DEV__ ? storedOffset() : 0;
 

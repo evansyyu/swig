@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HeroArt } from '@/components/hero-art';
 import { Icon } from '@/components/icon';
+import { Logo } from '@/components/logo';
 import { PrimaryButton } from '@/components/primary-button';
 import { TextButton } from '@/components/text-button';
 import { ThemedText } from '@/components/themed-text';
@@ -30,7 +31,7 @@ const copy = {
     title: 'Welcome back, water friend.',
     subtitle: 'Log in to reconnect with your daily rhythm.',
     cta: 'Log in',
-    switchPrefix: 'New to Sip?',
+    switchPrefix: 'New to Swig?',
     switchTitle: 'Sign up',
     switchTo: '/sign-up',
   },
@@ -95,23 +96,7 @@ export function AuthScreen({ mode }: { mode: 'sign-up' | 'log-in' }) {
         gap: spacing.xl,
       }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-        <View
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: radius.full,
-            backgroundColor: colors.surfaceTint,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Icon ios="drop" android="water_drop" size={22} color={colors.accent} />
-        </View>
-        <ThemedText variant="title2" accessibilityRole="header">
-          Sip
-        </ThemedText>
-      </View>
+      <Logo height={56} style={{ alignSelf: 'flex-start' }} />
 
       <HeroArt level={0.35} />
 

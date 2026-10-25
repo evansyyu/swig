@@ -30,7 +30,7 @@ export function IntervalStep() {
           title={isAppBlockingSupported ? 'Continue' : 'Finish & set up Balance'}
           onPress={() => {
             updateSettings({ interval_min: interval });
-            router.push(isAppBlockingSupported ? '/apps' : '/bottle');
+            router.push(isAppBlockingSupported ? '/apps' : '/balance');
           }}
         />
       }

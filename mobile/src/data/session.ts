@@ -11,7 +11,7 @@ import { getState, resetState, setState } from './store';
 import { applyServerStatus, requestSync, setUnauthorizedHandler, startSync, stopSync } from './sync';
 import type { Leaderboard, Profile, Status } from './types';
 
-const TOKEN_KEY = 'sip.token';
+const TOKEN_KEY = 'swig.token';
 
 type AuthResponse = { token: string; user: Profile };
 

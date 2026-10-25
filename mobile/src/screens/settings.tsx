@@ -39,7 +39,7 @@ export function Settings() {
   const confirmLogOut = () => {
     const unsynced = getState().outbox.length;
     Alert.alert(
-      'Log out of Sip?',
+      'Log out of Swig?',
       unsynced
         ? `${unsynced} change${unsynced === 1 ? " hasn't" : "s haven't"} synced yet and will be lost.`
         : 'Your history stays safe in your account.',

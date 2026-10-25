@@ -107,6 +107,18 @@ class AccountTests(unittest.TestCase):
         self.assertEqual(data["status"]["total_ml"], 0)
         self.assertEqual([(d["day"], d["consumed_ml"]) for d in data["days"]], [("2026-10-22", 500)])
 
+    def test_log_from_a_shifted_dev_clock_lands_on_that_day(self):
+        auth = self.register()
+        at = (NOW + timedelta(days=1)).isoformat()
+        data = self.sync(auth, [{"id": "1", "type": "intake.add",
+                                 "payload": {"id": str(uuid.uuid4()), "amount_ml": 250, "at": at}}])
+        self.assertEqual(data["status"]["total_ml"], 0)  # not today's
+        self.assertEqual([(d["day"], d["consumed_ml"]) for d in data["days"]], [("2026-10-24", 250)])
+        too_far = (NOW + timedelta(days=8)).isoformat()
+        data = self.sync(auth, [{"id": "2", "type": "intake.add",
+                                 "payload": {"id": str(uuid.uuid4()), "amount_ml": 250, "at": too_far}}])
+        self.assertEqual(data["results"][0]["error"]["code"], "invalid_value")
+
     # ---- status, streaks, leaderboard ----
     def test_lock_turns_on_when_critical_and_off_after_a_drink(self):
         auth = self.register()

@@ -80,7 +80,7 @@ function LogCard() {
     <Card>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
         <ThemedText variant="title2" style={{ fontSize: 20 }}>
-          Sip log
+          Swig log
         </ThemedText>
         <ThemedText variant="subhead" tone="secondary">
           Today

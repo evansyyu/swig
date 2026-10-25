@@ -17,7 +17,7 @@ export function describeIntake(intake: Intake) {
         amount: intake.amount_ml ? `+${formatMl(intake.amount_ml)} ml` : 'Not counted',
       };
     case 'manual':
-      return { label: 'Logged in Sip', amount: `+${formatMl(intake.amount_ml)} ml` };
+      return { label: 'Logged in Swig', amount: `+${formatMl(intake.amount_ml)} ml` };
     default:
       return { label: 'Drink detected', amount: `+${formatMl(intake.amount_ml)} ml` };
   }

@@ -1,7 +1,7 @@
 import { randomUUID } from 'expo-crypto';
 
 import { request } from './api';
-import { appNow } from './clock';
+import { appDate, appNow } from './clock';
 import { cancelLocalIntake, writeKv, writeLocalMutation } from './db';
 import { localDay } from './pace';
 import { getState, setState } from './store';
@@ -22,9 +22,9 @@ function enqueue(mutation: Mutation, intake?: Intake) {
   void writeLocalMutation(mutation, intake).then(() => requestSync());
 }
 
-/** A manual sip (Developer panel). */
+/** A manual sip (Developer panel), at app time so it lands on the day the dev clock shows. */
 export function logSip(amountMl: number) {
-  const at = new Date(); // real time: the dev clock offset never reaches recorded data
+  const at = appDate();
   const intake: Intake = {
     id: randomUUID(),
     day: localDay(at),

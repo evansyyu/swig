@@ -10,9 +10,9 @@ import { applyAppLock } from './app-blocker';
 /**
  * Periodic background sync (the OS decides when; at most every ~15 min). Flushes the
  * outbox, pulls the latest status, and applies or lifts the app lock, so blocking
- * keeps up with the scale even while Sip isn't open.
+ * keeps up with the scale even while Swig isn't open.
  */
-const TASK = 'sip-background-sync';
+const TASK = 'swig-background-sync';
 
 TaskManager.defineTask(TASK, async () => {
   try {

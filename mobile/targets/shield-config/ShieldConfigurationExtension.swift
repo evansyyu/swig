@@ -46,13 +46,13 @@ class ShieldConfigurationExtension: ShieldConfigurationDataSource {
   // MARK: - Helpers
 
   private func makeConfiguration(subject: String?, groupName: String?) -> ShieldConfiguration {
-    // Sip palette: navy ink, steel accent, peach highlight (see src/theme/colors.ts).
+    // Swig palette: navy ink, steel accent, peach highlight (see src/theme/colors.ts).
     let navy = UIColor(red: 0x1E / 255, green: 0x31 / 255, blue: 0x56 / 255, alpha: 1)
     let steel = UIColor(red: 0x53 / 255, green: 0x69 / 255, blue: 0x92 / 255, alpha: 1)
     let peach = UIColor(red: 0xFB / 255, green: 0xE2 / 255, blue: 0xD2 / 255, alpha: 1)
     let ink = UIColor { $0.userInterfaceStyle == .dark ? .white : navy }
     let subtitle = "You've fallen behind on water, so \(groupName ?? "this app") is paused. "
-      + "Drink a glass, then open Sip to unlock."
+      + "Drink a glass, then open Swig to unlock."
     return ShieldConfiguration(
       backgroundBlurStyle: .systemUltraThinMaterial,
       backgroundColor: peach.withAlphaComponent(0.35),

@@ -43,7 +43,7 @@ export function AppsStep() {
 
   const next = (enable: boolean) => {
     updateSettings({ lock_enabled: enable });
-    router.push('/bottle');
+    router.push('/balance');
   };
 
   return (
@@ -64,7 +64,7 @@ export function AppsStep() {
           A little extra motivation.
         </ThemedText>
         <ThemedText variant="body" tone="secondary">
-          Fall far behind your pace and Sip pauses the apps you pick, like Instagram or TikTok, until your next sip.
+          Fall far behind your pace and Swig pauses the apps you pick, like Instagram or TikTok, until your next sip.
         </ThemedText>
       </View>
 
