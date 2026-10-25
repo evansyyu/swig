@@ -22,7 +22,7 @@ const int TARE_BTN = 9;   // BOOT button
 const float EMPTY_THRESHOLD_G = 12.0;  // below this the platform counts as empty
 const int   EMPTY_READINGS    = 6;     // about 3 seconds of empty before re-zeroing
 
-const unsigned long SEND_MS = 500;     // about 2 readings a second, as the server expects
+const unsigned long SEND_MS = 20;     // about 2 readings a second, as the server expects
 
 HX711 scale;
 Preferences prefs;
@@ -173,7 +173,6 @@ void loop() {
     emptyCount = 0;
     Serial.println("Tared (button).");
   }
-
   // Weigh and send. Uncalibrated readings are raw counts, so send nothing until calibrated.
   static unsigned long lastSend = 0;
   if (calFactor != 0 && millis() - lastSend >= SEND_MS && scale.is_ready()) {
@@ -181,17 +180,6 @@ void loop() {
     float grams = scale.get_units(5);
     if (fabs(grams) < 0.5) grams = 0;   // hide tiny noise around zero
 
-    // Auto tare: platform empty for about 3 seconds -> re-zero, so drift never builds up
-    if (fabs(grams) < EMPTY_THRESHOLD_G) {
-      if (++emptyCount >= EMPTY_READINGS && grams != 0) {
-        scale.tare(10);
-        grams = 0;
-        emptyCount = 0;
-        Serial.println("Tared (auto).");
-      }
-    } else {
-      emptyCount = 0;
-    }
 
     String Sgram = String(grams);
     ch->setValue(Sgram);
