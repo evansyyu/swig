@@ -21,6 +21,13 @@ const int TARE_BTN = 9;   // BOOT button
 // ---- Auto tare ----
 const float EMPTY_THRESHOLD_G = 12.0;  // below this the platform counts as empty
 const int   EMPTY_READINGS    = 6;     // about 3 seconds of empty before re-zeroing
+const float STABLE_SPREAD_G   = 1.0;   // readings must stay this close together to count as empty
+
+const unsigned long WARMUP_MS = 3000;  // the HX711 and load cell drift most right after power-up
+
+// ---- Calibration ----
+const double CAL_MIN_COUNTS = 2000;    // a few grams of raw signal; below this, noise sets the factor
+const int    CAL_TRIES      = 5;       // about 15 seconds to get the known weight on and settled
 
 const unsigned long SEND_MS = 20;     // about 2 readings a second, as the server expects
 
@@ -62,6 +69,13 @@ String waitForLine() {
   return s;
 }
 
+// Re-zeroes on whatever is on the platform now and saves it as the zero for the next boot
+void zero() {
+  scale.tare(20);
+  prefs.putLong("offset", scale.get_offset());
+  emptyCount = 0;
+}
+
 void calibrate() {
   Serial.println("\n--- CALIBRATION ---");
   Serial.println("Remove everything from the scale, then press Enter.");
@@ -72,7 +86,7 @@ void calibrate() {
     return;
   }
   scale.set_scale();        // reset to raw units
-  scale.tare(20);
+  zero();
   Serial.println("Tared. Place a KNOWN weight on the scale.");
   Serial.println("Type its weight in grams (e.g. 500) and press Enter:");
   setStatus("cal:weight");
@@ -83,8 +97,23 @@ void calibrate() {
     setStatus("cal:cancelled");
     return;
   }
-  delay(1000);              // let it settle
-  long reading = scale.get_value(20);
+  // Wait for the weight to be on and settled: two averages that agree, and far enough
+  // from zero that noise can't set the factor (or flip its sign).
+  double reading = 0;
+  bool settled = false;
+  for (int i = 0; i < CAL_TRIES && !settled; i++) {
+    delay(1000);
+    double a = scale.get_value(10);
+    double b = scale.get_value(10);
+    reading = (a + b) / 2;
+    settled = fabs(reading) >= CAL_MIN_COUNTS && fabs(a - b) <= 0.02 * fabs(reading);
+  }
+  if (!settled) {
+    Serial.println("No steady weight on the scale, calibration cancelled.");
+    if (calFactor != 0) scale.set_scale(calFactor);
+    setStatus("cal:cancelled");
+    return;
+  }
   calFactor = reading / known;
   scale.set_scale(calFactor);
   prefs.putFloat("cal", calFactor);
@@ -141,14 +170,23 @@ void setup() {
   scale.begin(DT_PIN, SCK_PIN);
   Serial.println("Waiting for HX711...");
   while (!scale.is_ready()) delay(100);
+  delay(WARMUP_MS);
 
-  scale.tare(20);
   if (calFactor == 0) {
     Serial.println("Not calibrated yet.");
     calibrate();
   } else {
     scale.set_scale(calFactor);
     Serial.printf("Loaded calibration factor: %.4f\n", calFactor);
+    // A cup left on at power-up would become the zero and read negative once lifted,
+    // so keep the saved zero when it shows something on the platform.
+    long savedOffset = prefs.getLong("offset", 0);
+    scale.set_offset(savedOffset);
+    if (savedOffset != 0 && scale.get_units(20) > EMPTY_THRESHOLD_G) {
+      Serial.println("Something is on the scale, keeping the saved zero.");
+    } else {
+      zero();
+    }
   }
   Serial.println("Commands: 't' = tare, 'c' = recalibrate");
 }
@@ -162,15 +200,14 @@ void loop() {
       cmd = bleLine;
       bleLineReady = false;
     }
-    if (cmd == "t") { scale.tare(20); Serial.println("Tared."); }
+    if (cmd == "t") { zero(); Serial.println("Tared."); }
     else if (cmd == "c") calibrate();
 
   // BOOT button tare
   static unsigned long lastPress = 0;
   if (digitalRead(TARE_BTN) == LOW && millis() - lastPress > 500) {
     lastPress = millis();
-    scale.tare(20);
-    emptyCount = 0;
+    zero();
     Serial.println("Tared (button).");
   }
   // Weigh and send. Uncalibrated readings are raw counts, so send nothing until calibrated.
@@ -178,8 +215,34 @@ void loop() {
   if (calFactor != 0 && millis() - lastSend >= SEND_MS && scale.is_ready()) {
     lastSend = millis();
     float grams = scale.get_units(5);
-    if (fabs(grams) < 0.5) grams = 0;   // hide tiny noise around zero
 
+    // Auto tare: platform steady and nearly empty for about 3 seconds -> shift the zero by
+    // the average drift, so creep and temperature drift never build up. Readings that
+    // move (a cup going on or off) restart the window, so a cup never ends up in the zero.
+    static float emptyMin, emptyMax, emptySum;
+    if (fabs(grams) < EMPTY_THRESHOLD_G) {
+      if (emptyCount == 0 || fmaxf(emptyMax, grams) - fminf(emptyMin, grams) > STABLE_SPREAD_G) {
+        emptyCount = 0;
+        emptyMin = emptyMax = grams;
+        emptySum = 0;
+      }
+      emptyMin = fminf(emptyMin, grams);
+      emptyMax = fmaxf(emptyMax, grams);
+      emptySum += grams;
+      if (++emptyCount >= EMPTY_READINGS) {
+        float drift = emptySum / emptyCount;
+        if (fabs(drift) >= 0.5) {
+          scale.set_offset(scale.get_offset() + lround(drift * scale.get_scale()));
+          grams -= drift;
+          Serial.printf("Tared (auto, %.1f g drift).\n", drift);
+        }
+        emptyCount = 0;
+      }
+    } else {
+      emptyCount = 0;
+    }
+
+    if (fabs(grams) < 0.5) grams = 0;   // hide tiny noise around zero
 
     String Sgram = String(grams);
     ch->setValue(Sgram);
