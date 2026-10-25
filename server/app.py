@@ -1,9 +1,8 @@
-"""WaterAlarmi server. Implements docs/API.md.
+"""WaterAlarmi server. Implements docs/API.md (v1). api.py adds accounts (v2) around it.
 
-Run:  python3 app.py        (listens on 0.0.0.0:5000)
+Run:  python3 app.py        (listens on 0.0.0.0:$PORT, default 5000)
 """
 import os
-import threading
 import time
 
 from flask import Flask, jsonify, render_template, request
@@ -132,6 +131,8 @@ def reminder_loop():
 
 
 if __name__ == "__main__":
-    threading.Thread(target=reminder_loop, daemon=True).start()
+    import uvicorn
+
+    # api.py serves v2 and mounts this Flask app; it also starts reminder_loop.
     print(f"Server on http://{speaker.lan_ip()}:{speaker.PORT}  (put this IP in firmware secrets.h)")
-    app.run(host="0.0.0.0", port=speaker.PORT)
+    uvicorn.run("api:api", host="0.0.0.0", port=speaker.PORT, proxy_headers=True, forwarded_allow_ips="*")
