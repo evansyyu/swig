@@ -111,7 +111,7 @@ void calibrate() {
   if (!settled) {
     Serial.println("No steady weight on the scale, calibration cancelled.");
     if (calFactor != 0) scale.set_scale(calFactor);
-    setStatus("cal:cancelled");
+    setStatus("cal:failed");
     return;
   }
   calFactor = reading / known;

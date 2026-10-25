@@ -21,7 +21,7 @@ The scale doesn't talk to the server itself. It advertises as `SWIG-SCALE` with 
 | --- | --- | --- |
 | `abcd1234-5678-90ab-cdef-1234567890ab` | read, notify | Weight in grams as text (`"312.50"`), about twice a second once calibrated |
 | `abcd1235-5678-90ab-cdef-1234567890ab` | write | Commands: `t` tare, `c` calibrate, then the answers to its prompts (`ok`, the known grams, or `x` to cancel) |
-| `abcd1236-5678-90ab-cdef-1234567890ab` | read, notify | Calibration step: `cal:empty`, `cal:weight`, `cal:done`, `cal:cancelled` (`ready` at boot) |
+| `abcd1236-5678-90ab-cdef-1234567890ab` | read, notify | Calibration step: `cal:empty`, `cal:weight`, `cal:done`, `cal:cancelled`, `cal:failed` (no steady known weight; old factor kept) (`ready` at boot) |
 
 ## POST /weight
 

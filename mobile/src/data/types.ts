@@ -102,10 +102,20 @@ export type SyncResponse = {
 export type ScaleLink = 'off' | 'scanning' | 'connecting' | 'connected';
 
 /**
- * Where the Balance's calibrate() routine is. `empty`, `weight`, `done` and `cancelled`
- * come from the scale; the others cover the wait after the app answers a prompt.
+ * Where the Balance's calibrate() routine is. `empty`, `weight`, `done`, `cancelled` and `failed`
+ * (the known weight never read steady) come from the scale; the others cover the wait after
+ * the app answers a prompt.
  */
-export type CalibrationStep = 'idle' | 'starting' | 'empty' | 'taring' | 'weight' | 'measuring' | 'done' | 'cancelled';
+export type CalibrationStep =
+  | 'idle'
+  | 'starting'
+  | 'empty'
+  | 'taring'
+  | 'weight'
+  | 'measuring'
+  | 'done'
+  | 'cancelled'
+  | 'failed';
 
 /** What the server said about the latest reading this phone relayed (`POST /weight`). */
 export type Relayed = { stable: boolean; stable_g: number | null; needs_refill: boolean };

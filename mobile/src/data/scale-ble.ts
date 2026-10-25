@@ -23,7 +23,10 @@ const STATUS_STEPS: Record<string, CalibrationStep> = {
   'cal:weight': 'weight',
   'cal:done': 'done',
   'cal:cancelled': 'cancelled',
+  'cal:failed': 'failed',
 };
+
+const FINISHED: CalibrationStep[] = ['idle', 'done', 'cancelled', 'failed'];
 
 let state: BleScale = { link: 'off', grams: null, relayed: null, calibration: 'idle', error: null };
 const listeners = new Set<() => void>();
@@ -201,7 +204,7 @@ function onStatus(text: string, initial = false) {
     void send('x').catch(() => undefined);
     return;
   }
-  if (step === 'done' || step === 'cancelled') cancelPending = false;
+  if (FINISHED.includes(step)) cancelPending = false;
   update({ calibration: step });
 }
 
@@ -242,7 +245,7 @@ export function submitKnownWeight(grams: number) {
 /** Back out of a calibration in progress; the scale keeps its saved factor. */
 export function cancelCalibration() {
   const step = state.calibration;
-  if (step === 'idle' || step === 'done' || step === 'cancelled') return;
+  if (FINISHED.includes(step)) return;
   cancelPending = true;
   // Mid-step (starting, taring, measuring): onStatus answers the next prompt instead.
   if (step === 'empty' || step === 'weight') void send('x').catch(() => undefined);

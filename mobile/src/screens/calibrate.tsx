@@ -21,6 +21,10 @@ const copy: Record<CalibrationStep, { title: string; body: string }> = {
   measuring: { title: 'Add your known weight.', body: 'Measuring… keep it still.' },
   done: { title: 'All calibrated.', body: 'Your Balance saved the new calibration. You can take the weight off.' },
   cancelled: { title: 'Calibration cancelled.', body: 'Your Balance kept its previous calibration.' },
+  failed: {
+    title: "Couldn't get a steady reading.",
+    body: 'Put the known weight on before tapping calibrate, and keep the Balance still. It kept its previous calibration.',
+  },
 };
 
 /** Runs the scale's calibrate() routine over Bluetooth, one prompt at a time. */
@@ -35,7 +39,7 @@ export function Calibrate() {
   const [error, setError] = useState<string | null>(null);
 
   // A result from an earlier visit isn't this one's.
-  const step = !started && (scaleStep === 'done' || scaleStep === 'cancelled') ? 'idle' : scaleStep;
+  const step = !started && (scaleStep === 'done' || scaleStep === 'cancelled' || scaleStep === 'failed') ? 'idle' : scaleStep;
   const connected = link === 'connected';
   const knownGrams = Number.parseFloat(known.replace(',', '.'));
 
@@ -56,6 +60,7 @@ export function Calibrate() {
     switch (step) {
       case 'idle':
       case 'cancelled':
+      case 'failed':
         return { title: step === 'idle' ? 'Start calibration' : 'Try again', onPress: start };
       case 'empty':
         return { title: "It's empty", onPress: () => run(confirmScaleEmpty) };
