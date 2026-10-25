@@ -12,7 +12,7 @@ export type SettingsFormProps = {
   settings: Settings;
   onChange: (patch: Partial<Settings>) => void;
   lock: { supported: boolean; state: AppLockState; onChooseApps: () => void };
-  bottle: { emptyG: number | null; scaleOwner: boolean; onReweigh: () => void };
+  bottle: { emptyG: number | null; scaleOwner: boolean; onReweigh: () => void; onCalibrate: () => void };
   sync: { phase: SyncPhase; pending: number; lastSyncedAt: string | null; onSyncNow: () => void };
   username: string;
   onLogOut: () => void;
@@ -77,6 +77,9 @@ export function SettingsForm({ settings, onChange, lock, bottle, sync, username,
               <ListItem.Trailing>
                 <Text>{bottle.emptyG != null ? `${Math.round(bottle.emptyG)} g` : 'Not set'}</Text>
               </ListItem.Trailing>
+            </ListItem>
+            <ListItem onPress={bottle.onCalibrate} supportingText="Use a known weight to correct readings">
+              Calibrate
             </ListItem>
           </FieldGroup.Section>
 

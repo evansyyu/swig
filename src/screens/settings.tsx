@@ -64,7 +64,12 @@ export function Settings() {
         settings={profile}
         onChange={(patch) => void onChange(patch)}
         lock={{ supported: isAppBlockingSupported, state: lockState, onChooseApps: () => void chooseApps() }}
-        bottle={{ emptyG: profile.empty_g, scaleOwner: profile.scale_owner, onReweigh: () => router.push('/reweigh') }}
+        bottle={{
+          emptyG: profile.empty_g,
+          scaleOwner: profile.scale_owner,
+          onReweigh: () => router.push('/reweigh'),
+          onCalibrate: () => router.push('/calibrate'),
+        }}
         sync={{ phase, pending, lastSyncedAt, onSyncNow: () => void requestSync() }}
         username={profile.username}
         onLogOut={confirmLogOut}

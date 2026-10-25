@@ -88,6 +88,13 @@
       "expo-sqlite",
       "expo-secure-store",
       "expo-background-task",
+      [
+        "react-native-ble-plx",
+        {
+          "neverForLocation": true,
+          "bluetoothAlwaysPermission": "Allow $(PRODUCT_NAME) to connect to your Balance scale"
+        }
+      ],
       "@bacons/apple-targets"
     ],
     "experiments": {

@@ -6,6 +6,7 @@ import { useEffect, useMemo } from 'react';
 import { useColorScheme } from 'react-native';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
+import { connectScale, disconnectScale } from '@/data/scale-ble';
 import { hydrate, resume } from '@/data/session';
 import { useAppState } from '@/data/store';
 import { useLockEnforcement } from '@/hooks/use-lock-enforcement';
@@ -30,6 +31,11 @@ export default function RootLayout() {
     void registerBackgroundSync();
     void SplashScreen.hideAsync();
   }, []);
+  useEffect(() => {
+    if (!signedIn) return;
+    void connectScale();
+    return disconnectScale;
+  }, [signedIn]);
 
   const navigationTheme = useMemo(() => {
     const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
@@ -66,6 +72,10 @@ export default function RootLayout() {
             <Stack.Screen
               name="reweigh"
               options={{ presentation: 'modal', headerShown: true, title: 'Bottle setup', headerShadowVisible: false }}
+            />
+            <Stack.Screen
+              name="calibrate"
+              options={{ presentation: 'modal', headerShown: true, title: 'Calibrate', headerShadowVisible: false }}
             />
             <Stack.Screen
               name="baseline"

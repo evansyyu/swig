@@ -98,6 +98,23 @@ export type SyncResponse = {
   leaderboard: Leaderboard;
 };
 
+/** Bluetooth link to the Balance (see scale/scale.ino). */
+export type ScaleLink = 'off' | 'scanning' | 'connecting' | 'connected';
+
+/**
+ * Where the Balance's calibrate() routine is. `empty`, `weight`, `done` and `cancelled`
+ * come from the scale; the others cover the wait after the app answers a prompt.
+ */
+export type CalibrationStep = 'idle' | 'starting' | 'empty' | 'taring' | 'weight' | 'measuring' | 'done' | 'cancelled';
+
+export type BleScale = {
+  link: ScaleLink;
+  /** Latest reading the scale sent, in grams. */
+  grams: number | null;
+  calibration: CalibrationStep;
+  error: string | null;
+};
+
 export type ScaleLive = {
   connected: boolean;
   grams: number | null;

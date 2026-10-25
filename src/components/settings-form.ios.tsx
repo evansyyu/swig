@@ -94,6 +94,7 @@ export function SettingsForm({ settings, onChange, lock, bottle, sync, username,
             </Text>
           </LabeledContent>
           <Button label="Weigh empty bottle" systemImage="scalemass" onPress={bottle.onReweigh} />
+          <Button label="Calibrate" systemImage="dial.medium" onPress={bottle.onCalibrate} />
         </Section>
 
         {lock.supported && (
