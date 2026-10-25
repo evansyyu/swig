@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 
 import { disableAppLock } from '@/lib/app-blocker';
-import { scheduleReminders } from '@/lib/voice';
+import { scheduleReminders } from '@/lib/reminders';
 
 import { request } from './api';
 import { clearAll, readDays, readIntakes, readKv, readOutbox, writeKv } from './db';

@@ -10,7 +10,7 @@ import { connectScale, disconnectScale } from '@/data/scale-ble';
 import { hydrate, resume } from '@/data/session';
 import { useAppState } from '@/data/store';
 import { useLockEnforcement } from '@/hooks/use-lock-enforcement';
-import { useVoice } from '@/hooks/use-voice';
+import { useReminders } from '@/hooks/use-reminders';
 // Importing this module also defines the background task, which must happen at startup.
 import { registerBackgroundSync } from '@/lib/background-sync';
 import { useColors } from '@/theme';
@@ -27,7 +27,7 @@ export default function RootLayout() {
   const onboarded = useAppState((s) => s.onboarded);
 
   useLockEnforcement();
-  useVoice();
+  useReminders();
   useEffect(() => {
     resume();
     void registerBackgroundSync();

@@ -56,13 +56,13 @@ class ApiTests(unittest.TestCase):
         self.assertTrue(data["should_lock"])
 
     def test_settings_roundtrip(self):
-        r = self.client.post("/api/settings", json={"goal_ml": 2500, "volume": 0.8})
+        r = self.client.post("/api/settings", json={"goal_ml": 2500, "interval_min": 45})
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.get_json()["goal_ml"], 2500)
-        self.assertEqual(self.client.get("/api/settings").get_json()["volume"], 0.8)
+        self.assertEqual(self.client.get("/api/settings").get_json()["interval_min"], 45)
 
     def test_settings_errors(self):
-        r = self.client.post("/api/settings", json={"volume": 2})
+        r = self.client.post("/api/settings", json={"goal_ml": 100})
         self.assertEqual((r.status_code, r.get_json()["error"]["code"]), (400, "invalid_value"))
         r = self.client.post("/api/settings", json={"nope": 1})
         self.assertEqual((r.status_code, r.get_json()["error"]["code"]), (400, "unknown_field"))
@@ -73,17 +73,6 @@ class ApiTests(unittest.TestCase):
         self.assertFalse(r.get_json()["should_lock"])
         self.client.post("/api/demo/override", json={"status": None})
         self.assertEqual(self.client.post("/api/reset").get_json(), {"ok": True})
-
-    def test_speak_returns_502_when_speaker_fails(self):
-        def fail(*_args, **_kwargs):
-            raise app_module.speaker.SpeakerUnavailable("not found")
-        original = app_module.speaker.speak
-        app_module.speaker.speak = fail
-        try:
-            r = self.client.post("/api/speak", json={"text": "hi"})
-        finally:
-            app_module.speaker.speak = original
-        self.assertEqual((r.status_code, r.get_json()["error"]["code"]), (502, "speaker_unavailable"))
 
     def test_bottle_empty_needs_a_stable_reading(self):
         r = self.client.post("/api/bottle/empty")

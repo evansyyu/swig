@@ -3,7 +3,6 @@ import { FieldGroup, Host, ListItem, Picker, ScrollView, Switch, Text } from '@e
 import type { SyncPhase } from '@/data/store';
 import type { Settings } from '@/data/types';
 import type { AppLockState } from '@/lib/app-blocker';
-import type { Voice } from '@/lib/voice';
 import { useColors } from '@/theme';
 import { END_HOURS, GOAL_OPTIONS, INTERVAL_OPTIONS, START_HOURS } from '@/constants/hydration';
 import { formatInterval, formatLiters } from '@/utils/format';
@@ -13,7 +12,6 @@ export type SettingsFormProps = {
   settings: Settings;
   onChange: (patch: Partial<Settings>) => void;
   lock: { supported: boolean; state: AppLockState; onChooseApps: () => void };
-  voice: { options: Voice[]; selected: string; onSelect: (id: string) => void; onPreview: () => void };
   bottle: { emptyG: number | null; scaleOwner: boolean; onReweigh: () => void; onCalibrate: () => void };
   sync: { phase: SyncPhase; pending: number; lastSyncedAt: string | null; onSyncNow: () => void };
   username: string;
@@ -23,9 +21,8 @@ export type SettingsFormProps = {
 };
 
 /** Android/web: universal @expo/ui (Jetpack Compose on Android), Material-style groups. */
-export function SettingsForm({ settings, onChange, lock, voice, bottle, sync, username, onLogOut, dev }: SettingsFormProps) {
+export function SettingsForm({ settings, onChange, lock, bottle, sync, username, onLogOut, dev }: SettingsFormProps) {
   const colors = useColors();
-  const chosen = voice.options.find((v) => v.id === voice.selected);
   return (
     <Host style={{ flex: 1 }} seedColor={colors.accent}>
       <ScrollView>
@@ -41,7 +38,7 @@ export function SettingsForm({ settings, onChange, lock, voice, bottle, sync, us
                 </Picker>
               </ListItem.Trailing>
             </ListItem>
-            <ListItem supportingText="Spoken by your speaker">
+            <ListItem supportingText="When you haven't had a sip">
               Reminders
               <ListItem.Trailing>
                 <Picker selectedValue={settings.interval_min} onValueChange={(interval_min) => onChange({ interval_min })} appearance="menu">
@@ -70,24 +67,6 @@ export function SettingsForm({ settings, onChange, lock, voice, bottle, sync, us
                   ))}
                 </Picker>
               </ListItem.Trailing>
-            </ListItem>
-          </FieldGroup.Section>
-
-          <FieldGroup.Section title="Voice">
-            {voice.options.length > 1 && (
-              <ListItem supportingText={chosen?.description}>
-                Speaker voice
-                <ListItem.Trailing>
-                  <Picker selectedValue={voice.selected} onValueChange={voice.onSelect} appearance="menu">
-                    {voice.options.map((v) => (
-                      <Picker.Item key={v.id} label={v.name} value={v.id} />
-                    ))}
-                  </Picker>
-                </ListItem.Trailing>
-              </ListItem>
-            )}
-            <ListItem onPress={voice.onPreview} supportingText="Plays a reminder on your speaker">
-              Preview voice
             </ListItem>
           </FieldGroup.Section>
 

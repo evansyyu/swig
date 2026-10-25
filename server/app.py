@@ -3,13 +3,17 @@
 Run:  python3 app.py        (listens on 0.0.0.0:$PORT, default 5000)
 """
 import os
-import time
+import socket
 
+from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 
-import speaker
-from tracker import Tracker, ValidationError
+# Existing environment variables win over server/.env, whatever the working directory.
+load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
+from tracker import Tracker, ValidationError  # noqa: E402 (after .env is loaded)
+
+PORT = int(os.environ.get("PORT", "5000"))
 app = Flask(__name__)
 tracker = Tracker()
 DEBUG_WEIGHT = os.environ.get("DEBUG_WEIGHT") == "1"
@@ -80,17 +84,6 @@ def post_settings():
 
 
 # ---- Testing and demo ----
-@app.post("/api/speak")
-def speak_now():
-    data = request.get_json(silent=True) or {}
-    text = data.get("text") or tracker.settings["message"]
-    try:
-        speaker.speak(text, tracker.settings["volume"])
-    except speaker.SpeakerUnavailable as exc:
-        return error("speaker_unavailable", str(exc), 502)
-    return jsonify(ok=True), 202
-
-
 @app.post("/api/bottle/empty")
 def bottle_empty():
     return jsonify(ok=True, empty_g=round(tracker.register_empty(), 1))
@@ -114,29 +107,23 @@ def index():
     return render_template("index.html")
 
 
-# ---- Reminders ----
-REFILL_MESSAGE = "Your bottle is almost empty. Time to refill!"
-
-
-def say(text):
+def lan_ip():
+    """This computer's IP on the shared network. Override with the SERVER_IP env var."""
+    if os.environ.get("SERVER_IP"):
+        return os.environ["SERVER_IP"]
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        speaker.speak(text, tracker.settings["volume"])
-    except speaker.SpeakerUnavailable as exc:
-        print(f"[speak] speaker unavailable: {exc}")
-
-
-def reminder_loop():
-    while True:
-        time.sleep(10)
-        if tracker.reminder_due():
-            say(tracker.settings["message"])
-        elif tracker.refill_prompt_due():
-            say(REFILL_MESSAGE)
+        s.connect(("10.255.255.255", 1))  # no packet is sent
+        return s.getsockname()[0]
+    except OSError:
+        return "127.0.0.1"
+    finally:
+        s.close()
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    # api.py serves v2 and mounts this Flask app; it also starts reminder_loop.
-    print(f"Server on http://{speaker.lan_ip()}:{speaker.PORT}  (put this IP in firmware secrets.h)")
-    uvicorn.run("api:api", host="0.0.0.0", port=speaker.PORT, proxy_headers=True, forwarded_allow_ips="*")
+    # api.py serves v2 and mounts this Flask app.
+    print(f"Server on http://{lan_ip()}:{PORT}  (use this address as EXPO_PUBLIC_API_URL for a local server)")
+    uvicorn.run("api:api", host="0.0.0.0", port=PORT, proxy_headers=True, forwarded_allow_ips="*")

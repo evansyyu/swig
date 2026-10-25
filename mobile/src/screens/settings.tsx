@@ -10,7 +10,6 @@ import { getState, useAppState } from '@/data/store';
 import { requestSync } from '@/data/sync';
 import type { Settings as SettingsValues } from '@/data/types';
 import { chooseApps, isAppBlockingSupported, useAppLockState } from '@/lib/app-blocker';
-import { say, setVoice, useVoiceChoice, VOICES } from '@/lib/voice';
 import { formatOffset } from '@/screens/dev';
 
 export function Settings() {
@@ -19,7 +18,6 @@ export function Settings() {
   const pending = useAppState((s) => s.outbox.length);
   const lastSyncedAt = useAppState((s) => s.sync.lastSyncedAt);
   const lockState = useAppLockState();
-  const voice = useVoiceChoice();
   const clockOffset = useClockOffset();
   if (!profile) return null;
 
@@ -36,12 +34,6 @@ export function Settings() {
       if (!count) return;
     }
     updateSettings(patch);
-  };
-
-  const preview = () => {
-    if (!say('reminder')) {
-      Alert.alert('Notifications are off', 'Allow notifications for Sip in Settings to hear its voice.');
-    }
   };
 
   const confirmLogOut = () => {
@@ -62,6 +54,11 @@ export function Settings() {
     <>
       <Stack.Screen
         options={{
+          // iOS: a native bar button (a glass close button on iOS 26). Bar buttons have no
+          // control size, so the close glyph stands in for a larger "Done". Android keeps the text.
+          unstable_headerRightItems: () => [
+            { type: 'button', label: 'Done', icon: { type: 'sfSymbol', name: 'xmark' }, onPress: () => router.back() },
+          ],
           headerRight: () => (
             <Pressable accessibilityRole="button" onPress={() => router.back()} hitSlop={10}>
               <ThemedText variant="headline" tone="accent">
@@ -75,7 +72,6 @@ export function Settings() {
         settings={profile}
         onChange={(patch) => void onChange(patch)}
         lock={{ supported: isAppBlockingSupported, state: lockState, onChooseApps: () => void chooseApps() }}
-        voice={{ options: VOICES, selected: voice, onSelect: setVoice, onPreview: preview }}
         bottle={{
           emptyG: profile.empty_g,
           scaleOwner: profile.scale_owner,

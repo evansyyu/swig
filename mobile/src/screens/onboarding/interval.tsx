@@ -40,7 +40,7 @@ export function IntervalStep() {
           How often should your reminders be?
         </ThemedText>
         <ThemedText variant="body" tone="secondary">
-          Your speaker reminds you to pause for a sip when it&apos;s been a while.
+          You&apos;ll get a reminder to pause for a sip when it&apos;s been a while.
         </ThemedText>
       </View>
 

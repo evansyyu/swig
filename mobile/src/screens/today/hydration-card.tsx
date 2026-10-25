@@ -3,9 +3,7 @@ import { View } from 'react-native';
 import { Card } from '@/components/card';
 import { Icon } from '@/components/icon';
 import { ProgressRing } from '@/components/progress-ring';
-import { SipButton } from '@/components/sip-button';
 import { ThemedText } from '@/components/themed-text';
-import { logSip } from '@/data/actions';
 import { useAppState } from '@/data/store';
 import { spacing, useColors } from '@/theme';
 import { formatMl } from '@/utils/format';
@@ -45,7 +43,6 @@ export function HydrationCard() {
       <ThemedText variant="title2" style={{ fontWeight: '600' }}>
         {remaining > 0 ? `${formatMl(remaining)} ml to go` : 'Goal reached. Nicely done.'}
       </ThemedText>
-      <SipButton onLog={logSip} />
     </Card>
   );
 }

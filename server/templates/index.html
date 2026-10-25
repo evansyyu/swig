@@ -16,14 +16,11 @@
 <label>Interval (min) <input id="interval_min" type="number"></label>
 <label>Start hour <input id="start_hour" type="number"></label>
 <label>End hour <input id="end_hour" type="number"></label>
-<label>Message <input id="message"></label>
-<label>Volume (0 to 1) <input id="volume" type="number" step="0.1" min="0" max="1"></label>
 <button onclick="save()">Save</button>
-<button onclick="post('/api/speak', {})">Test speaker</button>
 <button onclick="post('/api/reset', {})">Reset today</button>
 
 <script>
-const ids = ["goal_ml", "interval_min", "start_hour", "end_hour", "message", "volume"];
+const ids = ["goal_ml", "interval_min", "start_hour", "end_hour"];
 let loaded = false;
 
 async function post(path, body) {
@@ -47,7 +44,7 @@ function save() {
   const body = {};
   ids.forEach(k => {
     const v = document.getElementById(k).value;
-    body[k] = k === "message" ? v : Number(v);
+    body[k] = Number(v);
   });
   post("/api/settings", body);
 }

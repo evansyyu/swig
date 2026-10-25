@@ -1,4 +1,4 @@
-import { say } from '@/lib/voice';
+import { notify } from '@/lib/reminders';
 
 import { request } from './api';
 import { requestSync } from './sync';
@@ -31,10 +31,9 @@ export async function relayReading(grams: number): Promise<Relayed | null | unde
       timeoutMs: 5_000,
     });
     if (event) {
-      if (event.type === 'drink') say('sip');
       void requestSync(); // the drink is logged server-side; pull it with the new status
     }
-    if (needs_refill && !neededRefill) say('refill');
+    if (needs_refill && !neededRefill) notify('refill');
     neededRefill = needs_refill;
     // A server from before `stable` was added: no verdict, so the setup screens keep polling.
     return typeof stable === 'boolean' ? { stable, stable_g, needs_refill } : null;

@@ -6,6 +6,8 @@ import type { HydrationStatus, Settings, Status } from './types';
  * to keep the UI and the app lock honest while offline. The server stays the source of truth.
  */
 const MIN_EXPECTED_ML = 300;
+/** This many hours of pace short = critical (locks the comfort apps). */
+const CRITICAL_HOURS_BEHIND = 4;
 
 export function hourFloat(date: Date) {
   return date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
@@ -22,9 +24,11 @@ export function computeStatus(total: number, goal: number, start: number, end: n
   if (hour < start || hour >= end || expected < MIN_EXPECTED_ML) return 'ok';
   const ratio = total / expected;
   if (ratio >= 1.1) return 'ahead';
+  // How far intake trails the pace line, in hours: the shortfall over the hourly pace.
+  const hoursBehind = (expected - total) / (goal / (end - start));
+  if (hoursBehind >= CRITICAL_HOURS_BEHIND) return 'critical';
   if (ratio >= 0.8) return 'ok';
-  if (ratio >= 0.5) return 'behind';
-  return 'critical';
+  return 'behind';
 }
 
 /** Local calendar day as YYYY-MM-DD (matches the server's per-user "day"). */

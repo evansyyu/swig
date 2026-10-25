@@ -108,7 +108,7 @@ def settings_of(user):
 
 
 def sync_tracker_settings(tracker, user):
-    """The scale owner's settings drive the speaker reminders in tracker.py."""
+    """The scale owner's goal and active hours drive the scale's status in tracker.py."""
     tracker.update_settings({key: getattr(user, key) for key in TRACKER_FIELDS})
 
 

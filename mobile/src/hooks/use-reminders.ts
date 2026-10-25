@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { useAppState } from '@/data/store';
-import { say, scheduleReminders, setupVoice } from '@/lib/voice';
+import { notify, scheduleReminders, setupNotifications } from '@/lib/reminders';
 
 /**
- * Keeps spoken reminders scheduled from the (offline-aware) status and settings, and speaks
- * when the goal is reached or the apps lock. Sips and refills are spoken by the scale relay.
+ * Keeps reminders scheduled from the (offline-aware) status and settings, and notifies when
+ * the goal is reached or the apps lock. A low bottle is reported by the scale relay.
  */
-export function useVoice() {
+export function useReminders() {
   const active = useAppState((s) => !!s.token && s.onboarded);
   const day = useAppState((s) => s.status?.day ?? null);
   const totalMl = useAppState((s) => s.status?.total_ml ?? 0);
@@ -22,7 +22,7 @@ export function useVoice() {
   useEffect(() => {
     if (!active) return;
     let cancelled = false;
-    void setupVoice().then((granted) => !cancelled && setReady(granted));
+    void setupNotifications().then((granted) => !cancelled && setReady(granted));
     return () => {
       cancelled = true;
     };
@@ -46,7 +46,7 @@ export function useVoice() {
     const prev = previous.current;
     previous.current = { day, totalMl, locked };
     if (!ready || !prev || prev.day !== day || goal == null) return;
-    if (prev.totalMl < goal && totalMl >= goal) say('goal');
-    else if (!prev.locked && locked) say('locked');
+    if (prev.totalMl < goal && totalMl >= goal) notify('goal');
+    else if (!prev.locked && locked) notify('locked');
   }, [ready, day, totalMl, locked, goal]);
 }

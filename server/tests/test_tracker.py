@@ -109,17 +109,6 @@ class BottleFlowTests(unittest.TestCase):
         feed(t, 1200)
         self.assertEqual(t.status()["total_ml"], 0)
 
-    def test_refill_prompt_fires_once_per_low_episode(self):
-        feed(self.t, 900)
-        self.assertFalse(self.t.refill_prompt_due())
-        feed(self.t, 240)
-        self.assertTrue(self.t.refill_prompt_due())
-        self.assertFalse(self.t.refill_prompt_due())
-        feed(self.t, 1200)
-        self.assertFalse(self.t.refill_prompt_due())
-        feed(self.t, 230)
-        self.assertTrue(self.t.refill_prompt_due())
-
     def test_new_day_starts_from_a_fresh_baseline(self):
         feed(self.t, 900)
         self.clock.advance(24 * 60)        # overnight the bottle was emptied and refilled
@@ -143,11 +132,17 @@ class StatusTests(unittest.TestCase):
         return t.status()["status"]
 
     def test_pace_rules(self):
-        # 13:30 -> 4.5 of 13 active hours -> expected 692 ml
+        # 13:30 -> 4.5 of 13 active hours -> expected 692 ml, pace 154 ml an hour
         self.assertEqual(self.status_for(800), "ahead")
         self.assertEqual(self.status_for(600), "ok")
         self.assertEqual(self.status_for(400), "behind")
-        self.assertEqual(self.status_for(100), "critical")
+        self.assertEqual(self.status_for(100), "behind")  # 3.8 hours behind
+        self.assertEqual(self.status_for(0), "critical")  # 4.5 hours behind
+
+    def test_four_hours_behind_is_critical(self):
+        # 21:00 -> expected 1846 ml: 1100 ml is 60% of pace but 4.9 hours behind
+        self.assertEqual(self.status_for(1100, 21, 0), "critical")
+        self.assertEqual(self.status_for(1300, 21, 0), "behind")  # 3.5 hours behind
 
     def test_goal_reached_is_ahead(self):
         self.assertEqual(self.status_for(2000), "ahead")
@@ -206,8 +201,7 @@ class SettingsTests(unittest.TestCase):
         self.assertEqual(s["interval_min"], 30)
 
     def test_rejects_bad_values(self):
-        for bad in ({"volume": 1.5}, {"goal_ml": 100}, {"goal_ml": "2000"},
-                    {"message": ""}, {"start_hour": 22, "end_hour": 9}):
+        for bad in ({"goal_ml": 100}, {"goal_ml": "2000"}, {"start_hour": 22, "end_hour": 9}):
             with self.assertRaises(ValidationError, msg=str(bad)):
                 self.t.update_settings(bad)
 
@@ -215,37 +209,6 @@ class SettingsTests(unittest.TestCase):
         with self.assertRaises(ValidationError) as ctx:
             self.t.update_settings({"min_drink_g": 5})
         self.assertEqual(ctx.exception.code, "unknown_field")
-
-
-class ReminderTests(unittest.TestCase):
-    def test_reminder_timing(self):
-        clock = FakeClock(9, 0)
-        t = Tracker(clock=clock)
-        self.assertFalse(t.reminder_due())     # no time has passed yet
-        clock.advance(31)
-        self.assertTrue(t.reminder_due())
-        self.assertFalse(t.reminder_due())     # not again right away
-        clock.advance(31)
-        self.assertTrue(t.reminder_due())
-
-    def test_drink_delays_reminder(self):
-        clock = FakeClock(10, 0)
-        t = Tracker(clock=clock)
-        feed(t, 500)
-        clock.advance(31)
-        feed(t, 450)                            # drank 50 ml
-        self.assertFalse(t.reminder_due())
-
-    def test_quiet_outside_hours_and_after_goal(self):
-        clock = FakeClock(22, 30)
-        t = Tracker(clock=clock)
-        clock.advance(60)
-        self.assertFalse(t.reminder_due())
-        clock = FakeClock(10, 0)
-        t = Tracker(clock=clock)
-        t.total_ml = 2000
-        clock.advance(60)
-        self.assertFalse(t.reminder_due())
 
 
 if __name__ == "__main__":

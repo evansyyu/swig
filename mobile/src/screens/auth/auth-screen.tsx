@@ -19,7 +19,7 @@ const copy = {
   'sign-up': {
     eyebrow: 'A little sip. A better day.',
     title: 'Find your daily flow.',
-    subtitle: 'Your bottle, Balance and speaker. One gentle hydration habit.',
+    subtitle: 'Your bottle and Balance. One gentle hydration habit.',
     cta: 'Create account',
     switchPrefix: 'Already have an account?',
     switchTitle: 'Log in',

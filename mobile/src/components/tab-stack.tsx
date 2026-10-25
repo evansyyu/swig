@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { type NativeStackNavigationOptions, Stack } from 'expo-router';
 import type { ReactNode } from 'react';
 
 import { useColors } from '@/theme';
@@ -9,7 +9,18 @@ const isIOS = process.env.EXPO_OS === 'ios';
  * A tab's native stack. iOS: transparent large title per the HIG (the screen omits its
  * own heading). Android: no app bar; the screen draws the reference heading itself.
  */
-export function TabStack({ screen, title, headerRight }: { screen: string; title: string; headerRight?: () => ReactNode }) {
+export function TabStack({
+  screen,
+  title,
+  headerRight,
+  headerRightItems,
+}: {
+  screen: string;
+  title: string;
+  headerRight?: () => ReactNode;
+  /** iOS: native bar button items, which replace `headerRight` there. */
+  headerRightItems?: NativeStackNavigationOptions['unstable_headerRightItems'];
+}) {
   const colors = useColors();
   return (
     <Stack
@@ -27,7 +38,7 @@ export function TabStack({ screen, title, headerRight }: { screen: string; title
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen name={screen} options={{ title, headerRight }} />
+      <Stack.Screen name={screen} options={{ title, headerRight, unstable_headerRightItems: headerRightItems }} />
     </Stack>
   );
 }

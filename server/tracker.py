@@ -19,7 +19,7 @@ REFILL_COUNT_MAX_ML = 100  # water left before a refill counts as drunk only up 
 MIN_EXPECTED_ML = 300    # before this much is expected, it is too early to judge
 AHEAD_RATIO = 1.1
 OK_RATIO = 0.8
-BEHIND_RATIO = 0.5
+CRITICAL_HOURS_BEHIND = 4  # this many hours of pace short = critical (locks the comfort apps)
 
 STATUSES = ("ahead", "ok", "behind", "critical")
 
@@ -28,8 +28,6 @@ DEFAULT_SETTINGS = {
     "interval_min": 30,
     "start_hour": 9,
     "end_hour": 22,
-    "message": "Time to drink some water!",
-    "volume": 0.5,
 }
 
 
@@ -49,11 +47,13 @@ def compute_status(total_ml, goal_ml, start_hour, end_hour, hour_float):
     ratio = total_ml / expected
     if ratio >= AHEAD_RATIO:
         return "ahead"
+    # How far intake trails the pace line, in hours: the shortfall over the hourly pace.
+    hours_behind = (expected - total_ml) / (goal_ml / (end_hour - start_hour))
+    if hours_behind >= CRITICAL_HOURS_BEHIND:
+        return "critical"
     if ratio >= OK_RATIO:
         return "ok"
-    if ratio >= BEHIND_RATIO:
-        return "behind"
-    return "critical"
+    return "behind"
 
 
 class ValidationError(ValueError):
@@ -72,9 +72,6 @@ def validate_settings(patch, current):
     def is_int(v):
         return isinstance(v, int) and not isinstance(v, bool)
 
-    def is_num(v):
-        return isinstance(v, (int, float)) and not isinstance(v, bool)
-
     int_ranges = {
         "goal_ml": (250, 6000),
         "interval_min": (1, 240),
@@ -87,12 +84,6 @@ def validate_settings(patch, current):
             lo, hi = int_ranges[key]
             if not is_int(value) or not lo <= value <= hi:
                 raise ValidationError("invalid_value", f"{key} must be an integer from {lo} to {hi}")
-        elif key == "volume":
-            if not is_num(value) or not 0 <= value <= 1:
-                raise ValidationError("invalid_value", "volume must be between 0 and 1")
-        elif key == "message":
-            if not isinstance(value, str) or not 1 <= len(value) <= 200:
-                raise ValidationError("invalid_value", "message must be 1 to 200 characters")
         new[key] = value
     if new["end_hour"] <= new["start_hour"]:
         raise ValidationError("invalid_value", "end_hour must be greater than start_hour")
@@ -104,14 +95,11 @@ class Tracker:
         self._clock = clock
         self._lock = threading.RLock()
         self.settings = dict(DEFAULT_SETTINGS)
-        self._started_at = clock()
         self.empty_g = None          # weight of the empty bottle, set by register_empty()
         self.stable_g = None
         self.bottle_present = False
         self.recent = []
-        self.last_reminder_at = None
         self.last_reading_at = None
-        self._refill_prompted = False
         # Called with each drink, refill, or baseline event (outside the lock).
         self.listeners = []
         self._reset_day(clock())
@@ -125,7 +113,6 @@ class Tracker:
             self.stable_g = None
             self.bottle_present = False
             self.recent = []
-        self._refill_prompted = False
         self.total_ml = 0.0
         self.last_drink_at = None
         self.last_event = None
@@ -270,34 +257,8 @@ class Tracker:
             self.empty_g = self.stable_g
             return self.empty_g
 
-    def refill_prompt_due(self):
-        """True once each time the bottle runs low. Cleared after a refill."""
-        with self._lock:
-            if not self._needs_refill():
-                self._refill_prompted = False
-                return False
-            if self._refill_prompted:
-                return False
-            self._refill_prompted = True
-            return True
-
     def set_override(self, status):
         if status is not None and status not in STATUSES:
             raise ValidationError("invalid_value", "status must be one of " + ", ".join(STATUSES) + " or null")
         with self._lock:
             self.override = status
-
-    # ---- reminders ----
-    def reminder_due(self):
-        """True if a reminder should play now. Marks it as sent."""
-        with self._lock:
-            now = self._clock()
-            interval = self.settings["interval_min"] * 60
-            if not self._in_active_hours(now) or self.total_ml >= self.settings["goal_ml"]:
-                return False
-            since_drink = (now - (self.last_drink_at or self._started_at)).total_seconds()
-            since_reminder = (now - self.last_reminder_at).total_seconds() if self.last_reminder_at else float("inf")
-            if since_drink < interval or since_reminder < interval:
-                return False
-            self.last_reminder_at = now
-            return True

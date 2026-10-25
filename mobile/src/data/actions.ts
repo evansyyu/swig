@@ -22,6 +22,7 @@ function enqueue(mutation: Mutation, intake?: Intake) {
   void writeLocalMutation(mutation, intake).then(() => requestSync());
 }
 
+/** A manual sip (Developer panel). */
 export function logSip(amountMl: number) {
   const at = new Date(); // real time: the dev clock offset never reaches recorded data
   const intake: Intake = {

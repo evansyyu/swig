@@ -8,7 +8,6 @@ import contextlib
 import json
 import logging
 import os
-import threading
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timezone
 
@@ -117,9 +116,6 @@ async def lifespan(_app):
     init_db()
     legacy.tracker.listeners.append(on_scale_event)
     restore_scale_owner()
-    # The phone app plays reminders now; set REMINDERS=1 to also speak them on this computer.
-    if os.environ.get("REMINDERS", "0") == "1":
-        threading.Thread(target=legacy.reminder_loop, daemon=True).start()
     hub.loop = asyncio.get_running_loop()
     ticker = hub.loop.create_task(hub.tick_forever())
     yield

@@ -18,10 +18,9 @@ import { hourLabel, syncSummary } from '@/utils/intake';
 import type { SettingsFormProps } from './settings-form';
 
 /** iOS: a native SwiftUI Form on the brand background, tinted with the brand steel. */
-export function SettingsForm({ settings, onChange, lock, voice, bottle, sync, username, onLogOut, dev }: SettingsFormProps) {
+export function SettingsForm({ settings, onChange, lock, bottle, sync, username, onLogOut, dev }: SettingsFormProps) {
   const colors = useColors();
   const secondary = foregroundStyle(colors.textSecondary);
-  const chosen = voice.options.find((v) => v.id === voice.selected);
   const lockFooter =
     lock.state.authorization === 'denied'
       ? 'Screen Time access is off. Turn it on in Settings › Screen Time to use the app lock.'
@@ -30,7 +29,7 @@ export function SettingsForm({ settings, onChange, lock, voice, bottle, sync, us
   return (
     <Host style={{ flex: 1 }}>
       <Form modifiers={[scrollContentBackground('hidden'), background(colors.background), tint(colors.accent)]}>
-        <Section title="Daily rhythm" footer={<Text>{"Reminders are spoken by your speaker when you haven't had a sip."}</Text>}>
+        <Section title="Daily rhythm" footer={<Text>{"Reminders arrive as notifications when you haven't had a sip."}</Text>}>
           <Picker
             label="Water goal"
             systemImage="drop"
@@ -81,25 +80,6 @@ export function SettingsForm({ settings, onChange, lock, voice, bottle, sync, us
               </Text>
             ))}
           </Picker>
-        </Section>
-
-        <Section title="Voice" footer={<Text>{chosen ? `${chosen.name}: ${chosen.description}.` : 'Reminders play on your speaker.'}</Text>}>
-          {voice.options.length > 1 && (
-            <Picker
-              label="Speaker voice"
-              systemImage="waveform"
-              selection={voice.selected}
-              onSelectionChange={voice.onSelect}
-              modifiers={[pickerStyle('menu')]}
-            >
-              {voice.options.map((v) => (
-                <Text key={v.id} modifiers={[tag(v.id)]}>
-                  {v.name}
-                </Text>
-              ))}
-            </Picker>
-          )}
-          <Button label="Preview voice" systemImage="speaker.wave.2" onPress={voice.onPreview} />
         </Section>
 
         <Section

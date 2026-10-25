@@ -13,7 +13,6 @@ __pycache__/
 *.pyc
 .venv/
 venv/
-server/audio/
 server/data/
 
 # Expo app (mobile/.gitignore has the rest)

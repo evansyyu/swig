@@ -9,7 +9,6 @@ Units: grams (g), milliliters (ml). Times are ISO 8601.
 | GET | `/api/status` | Test page | Progress and lock decision (the app uses v2 `/me/status`) |
 | GET / POST | `/api/settings` | Test page | Read / change settings |
 | POST | `/api/bottle/empty` | Test page | Save the empty bottle weight |
-| POST | `/api/speak` | Testing | Speak on this computer's speaker |
 | POST | `/api/reset` | Demo | Reset today's total and the lock |
 | POST | `/api/demo/override` | Demo | Force a status |
 
@@ -54,7 +53,7 @@ Must answer fast; never wait for speech.
 
 | Field | Notes |
 | --- | --- |
-| `status` | `ahead`, `ok`, `behind`, or `critical` (drives the mascot) |
+| `status` | `ahead`, `ok`, `behind`, or `critical` |
 | `should_lock` | **The app locks apps when this is `true`** (only if the user turned locking on) |
 | `last_drink_at` | `null` if nothing drunk today |
 | `last_event` | Latest `drink` or `refill`, or `null`. A refill has `ml` (added) and `drank_ml` (see below) |
@@ -64,35 +63,31 @@ Must answer fast; never wait for speech.
 
 **Bottle flow:** the first stable reading of each day is the baseline, never a drink. Every later drop is a drink. When the bottle is refilled, the water left before the refill (if 100 ml or less) counts as drunk and is reported as `drank_ml`. Topping up a bottle that still has lots of water is not a drink. The empty weight must be saved first, or refills only move the baseline.
 
-**Status** is based on pace: `expected_ml = goal_ml x share of active hours passed`, `ratio = total_ml / expected_ml`.
+**Status** is based on pace: `expected_ml = goal_ml x share of active hours passed`, `ratio = total_ml / expected_ml`,
+and `hours_behind = (expected_ml - total_ml) / (goal_ml / active hours)`, how many hours of pace the intake trails by.
 
 | Condition (first match) | `status` |
 | --- | --- |
 | `total_ml >= goal_ml` | `ahead` |
 | Outside active hours, or `expected_ml < 300` | `ok` |
 | `ratio >= 1.1` | `ahead` |
+| `hours_behind >= 4` | `critical` |
 | `ratio >= 0.8` | `ok` |
-| `ratio >= 0.5` | `behind` |
-| otherwise | `critical` |
+| otherwise | `behind` |
 
 **Lock:** `should_lock` turns `true` when status becomes `critical`, and turns `false` on the next detected drink, when the goal is reached, or on reset.
 
 ## GET / POST /api/settings
 
 ```json
-{ "goal_ml": 2000, "interval_min": 30, "start_hour": 9, "end_hour": 22,
-  "message": "Time to drink some water!", "volume": 0.5 }
+{ "goal_ml": 2000, "interval_min": 30, "start_hour": 9, "end_hour": 22 }
 ```
 
-POST accepts any subset and returns the full object. Ranges: `goal_ml` 250 to 6000, `interval_min` 1 to 240, `start_hour` 0 to 23, `end_hour` 1 to 24, `volume` 0 to 1.
+POST accepts any subset and returns the full object. Ranges: `goal_ml` 250 to 6000, `interval_min` 1 to 240, `start_hour` 0 to 23, `end_hour` 1 to 24.
 
 ## POST /api/bottle/empty
 
 No body. Saves the weight now on the scale as the empty bottle (include the lid if it is used). Returns `{ "ok": true, "empty_g": 200.0 }`, or `409 no_stable_reading` if no bottle is resting on the scale yet.
-
-## POST /api/speak
-
-`{ "text": "optional phrase" }` plays on the JBL speaker (default: saved `message`). Returns `202` after playback, or `502` if speech could not be generated or played.
 
 ## POST /api/reset
 
@@ -105,10 +100,10 @@ No body. Returns `{ "ok": true }`.
 ## Errors
 
 ```json
-{ "error": { "code": "invalid_value", "message": "volume must be between 0 and 1" } }
+{ "error": { "code": "invalid_value", "message": "goal_ml must be an integer from 250 to 6000" } }
 ```
 
-Codes: `invalid_value` (400), `unknown_field` (400), `no_stable_reading` (409), `speaker_unavailable` (502).
+Codes: `invalid_value` (400), `unknown_field` (400), `no_stable_reading` (409).
 
 
 # v2: accounts, history, leaderboard, offline sync
@@ -118,7 +113,7 @@ App endpoints need `Authorization: Bearer <token>`. Errors use the same shape as
 `username_taken` (409) and `not_found` (404). Times are UTC ISO 8601; "day" is the user's local date.
 
 **The scale** belongs to the user who last called `POST /me/bottle/empty` with no body. Its drinks, refills and
-daily baseline are logged to that user, and that user's goal, interval and active hours drive the speaker.
+daily baseline are logged to that user, and that user's goal, interval and active hours drive its status.
 `/weight` stays unauthenticated.
 
 | Method | Path | Purpose |

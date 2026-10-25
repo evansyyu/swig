@@ -8,7 +8,7 @@ import { useAppState } from '@/data/store';
 import { spacing } from '@/theme';
 import { formatMl, formatTime } from '@/utils/format';
 
-/** Balance connection, water left in the bottle, and when the speaker nudges next. */
+/** Balance connection, water left in the bottle, and when the next reminder is due. */
 export function BalanceCard() {
   const owner = useAppState((s) => s.profile?.scale_owner ?? false);
   const scale = useAppState((s) => s.status?.scale ?? null);
