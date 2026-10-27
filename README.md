@@ -112,12 +112,3 @@ This repo is public. Never commit API keys or Apple signing files. `.env` files 
 - Dropped spoken reminders (ElevenLabs voices on a JBL speaker): reminders are plain notifications now.
 - Firmware: fixed readings drifting negative (steady-only auto tare, power-up warm-up and saved zero,
   calibration rejects an unsteady known weight and the app shows it as failed).
-
-## Status
-
-- [x] Server: drink detection, accounts, offline sync, streaks, leaderboard (tests in `server/tests/`)
-- [x] Firmware: BLE weight, calibration from the app, auto tare, BOOT button tare
-- [x] App: accounts, onboarding, offline sync, app lock, BLE relay, reminders, calibration
-- [ ] Run the full loop on real hardware (iPhone + scale)
-- [ ] Save the scale's detection state so a server restart keeps the in-progress reading window
-- [ ] The scale belongs to one account at a time (whoever last weighed the empty bottle), and `/weight` has no auth
