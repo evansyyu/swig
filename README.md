@@ -100,11 +100,6 @@ server (default: the Railway deployment). See [`mobile/AGENTS.md`](mobile/AGENTS
 
 This repo is public. Never commit API keys or Apple signing files. `.env` files are gitignored.
 
-## Project docs
-
-- [PRD](https://docs.google.com/document/d/1Nam2ALsrk16Ci24TDqdAEjSiVzpwnchIcs6OA0Z5d7w/edit)
-- [System documentation](https://docs.google.com/document/d/1TIse47zRC7wrYSXRJBiZn49XmpIwtrPf876fU5obkOE/edit)
-
 ## Changelog
 
 - Merged the app (`evansyyu/swig`) and the server and firmware (`yoobinchang/WaterAlarmi`) into one repo, keeping both histories.
